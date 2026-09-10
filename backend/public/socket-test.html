@@ -1,0 +1,2323 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+  <meta charset="UTF-8">
+
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+
+  <title>
+    Smart Referral - Live Ambulance & Hospital Updates
+  </title>
+
+
+  <!-- =====================================================
+       LEAFLET CSS
+       ====================================================== -->
+
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  >
+
+
+  <!-- =====================================================
+       SOCKET.IO
+       ====================================================== -->
+
+  <script src="/socket.io/socket.io.js"></script>
+
+
+  <!-- =====================================================
+       LEAFLET JS
+       ====================================================== -->
+
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  ></script>
+
+
+  <!-- =====================================================
+       PAGE CSS
+       ====================================================== -->
+
+  <style>
+
+    * {
+      box-sizing: border-box;
+    }
+
+
+    body {
+      margin: 0;
+      padding: 30px;
+
+      font-family: Arial, sans-serif;
+
+      background: #f5f7fa;
+
+      color: #111827;
+    }
+
+
+    .container {
+      max-width: 1100px;
+
+      margin: auto;
+    }
+
+
+    .card {
+      background: white;
+
+      padding: 20px;
+
+      margin-bottom: 20px;
+
+      border-radius: 12px;
+
+      border: 1px solid #ddd;
+
+      box-shadow:
+        0 2px 8px rgba(0, 0, 0, 0.05);
+    }
+
+
+    h1 {
+      margin-top: 0;
+    }
+
+
+    h2 {
+      margin-top: 0;
+    }
+
+
+    /* =====================================================
+       CONNECTION STATUS
+       ====================================================== */
+
+    .status-box {
+
+      padding: 12px;
+
+      border-radius: 8px;
+
+      background: #f1f5f9;
+
+      margin-top: 15px;
+    }
+
+
+    .status-online {
+
+      color: green;
+
+      font-weight: bold;
+    }
+
+
+    .status-offline {
+
+      color: red;
+
+      font-weight: bold;
+    }
+
+
+    /* =====================================================
+       COORDINATES
+       ====================================================== */
+
+    .coordinates {
+
+      display: flex;
+
+      gap: 20px;
+
+      flex-wrap: wrap;
+    }
+
+
+    .coordinate {
+
+      flex: 1;
+
+      min-width: 200px;
+
+      padding: 15px;
+
+      background: #f5f5f5;
+
+      border-radius: 8px;
+    }
+
+
+    .coordinate-title {
+
+      font-size: 14px;
+
+      color: #555;
+
+      margin-bottom: 5px;
+    }
+
+
+    .value {
+
+      font-size: 28px;
+
+      font-weight: bold;
+    }
+
+
+    #updateCount {
+
+      font-size: 22px;
+
+      font-weight: bold;
+    }
+
+
+    /* =====================================================
+       MAP
+       ====================================================== */
+
+    #map {
+
+      width: 100%;
+
+      height: 550px;
+
+      border-radius: 12px;
+
+      overflow: hidden;
+    }
+
+
+    /* =====================================================
+       HOSPITAL SERVICE GRID
+       ====================================================== */
+
+    .hospital-header {
+
+      display: flex;
+
+      justify-content: space-between;
+
+      align-items: center;
+
+      gap: 15px;
+
+      flex-wrap: wrap;
+    }
+
+
+    .live-badge {
+
+      padding: 6px 10px;
+
+      border-radius: 20px;
+
+      background: #dcfce7;
+
+      color: #166534;
+
+      font-size: 12px;
+
+      font-weight: bold;
+    }
+
+
+    .service-card {
+
+      margin-top: 15px;
+
+      padding: 18px;
+
+      border: 1px solid #ddd;
+
+      border-radius: 10px;
+
+      background: #fafafa;
+    }
+
+
+    .service-top {
+
+      display: flex;
+
+      justify-content: space-between;
+
+      align-items: center;
+
+      gap: 15px;
+
+      flex-wrap: wrap;
+    }
+
+
+    .service-name {
+
+      font-size: 20px;
+
+      font-weight: bold;
+    }
+
+
+    .availability {
+
+      padding: 6px 10px;
+
+      border-radius: 20px;
+
+      font-size: 12px;
+
+      font-weight: bold;
+    }
+
+
+    .available {
+
+      background: #dcfce7;
+
+      color: #166534;
+    }
+
+
+    .unavailable {
+
+      background: #fee2e2;
+
+      color: #991b1b;
+    }
+
+
+    .service-details {
+
+      display: grid;
+
+      grid-template-columns:
+        repeat(3, 1fr);
+
+      gap: 12px;
+
+      margin-top: 15px;
+    }
+
+
+    .service-detail {
+
+      padding: 12px;
+
+      background: white;
+
+      border-radius: 8px;
+
+      border: 1px solid #e5e7eb;
+    }
+
+
+    .detail-label {
+
+      font-size: 12px;
+
+      color: #6b7280;
+
+      margin-bottom: 5px;
+    }
+
+
+    .detail-value {
+
+      font-size: 18px;
+
+      font-weight: bold;
+    }
+
+
+    .service-update-status {
+
+      margin-top: 12px;
+
+      font-size: 13px;
+
+      color: #6b7280;
+    }
+
+
+
+    .bed-card {
+      margin-top: 15px;
+      padding: 18px;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      background: #fafafa;
+    }
+
+    .bed-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+
+    .bed-name {
+      font-size: 20px;
+      font-weight: bold;
+    }
+
+    .bed-count {
+      font-size: 34px;
+      font-weight: bold;
+      margin-top: 12px;
+    }
+
+    .bed-count span {
+      font-size: 18px;
+      color: #6b7280;
+      font-weight: normal;
+    }
+
+    .bed-update-status {
+      margin-top: 10px;
+      font-size: 13px;
+      color: #6b7280;
+    }
+
+    .bed-live-update {
+      animation: flashBedUpdate 0.8s ease;
+    }
+
+    @keyframes flashBedUpdate {
+      0% {
+        background: #dcfce7;
+      }
+      100% {
+        background: #fafafa;
+      }
+    }
+
+    .live-update {
+
+      animation: flashUpdate 0.8s ease;
+    }
+
+
+    @keyframes flashUpdate {
+
+      0% {
+        background: #dcfce7;
+      }
+
+      100% {
+        background: #fafafa;
+      }
+
+    }
+
+
+    /* =====================================================
+       HOSPITAL MARKER
+       ====================================================== */
+
+    .hospital-marker {
+
+      width: 64px;
+
+      height: 64px;
+
+      display: flex;
+
+      align-items: center;
+
+      justify-content: center;
+
+      background: white;
+
+      border: 4px solid #111;
+
+      border-radius: 50%;
+
+      box-shadow:
+        0 4px 12px rgba(0, 0, 0, 0.5);
+
+      font-size: 36px;
+    }
+
+
+    /* =====================================================
+       AMBULANCE MARKER
+       ====================================================== */
+
+    .ambulance-marker {
+
+      width: 76px;
+
+      height: 54px;
+
+      position: relative;
+
+      background: #e53935;
+
+      border: 4px solid #111;
+
+      border-radius: 10px;
+
+      box-shadow:
+        0 5px 15px rgba(0, 0, 0, 0.6);
+    }
+
+
+    .ambulance-marker-text {
+
+      position: absolute;
+
+      top: 8px;
+
+      left: 8px;
+
+      color: white;
+
+      font-size: 19px;
+
+      font-weight: bold;
+
+      letter-spacing: 1px;
+    }
+
+
+    .ambulance-cross-vertical {
+
+      position: absolute;
+
+      width: 6px;
+
+      height: 20px;
+
+      background: white;
+
+      right: 13px;
+
+      top: 8px;
+    }
+
+
+    .ambulance-cross-horizontal {
+
+      position: absolute;
+
+      width: 20px;
+
+      height: 6px;
+
+      background: white;
+
+      right: 6px;
+
+      top: 15px;
+    }
+
+
+    .ambulance-wheel {
+
+      position: absolute;
+
+      width: 15px;
+
+      height: 15px;
+
+      background: #111;
+
+      border-radius: 50%;
+
+      bottom: -10px;
+    }
+
+
+    .ambulance-wheel-left {
+
+      left: 9px;
+    }
+
+
+    .ambulance-wheel-right {
+
+      right: 9px;
+    }
+
+
+    .ambulance-label {
+
+      position: absolute;
+
+      top: 60px;
+
+      left: 50%;
+
+      transform: translateX(-50%);
+
+      background: #e53935;
+
+      color: white;
+
+      padding: 4px 8px;
+
+      border-radius: 5px;
+
+      font-size: 11px;
+
+      font-weight: bold;
+
+      white-space: nowrap;
+
+      box-shadow:
+        0 2px 5px rgba(0, 0, 0, 0.3);
+    }
+
+
+    .ambulance-icon,
+    .hospital-icon {
+
+      background: transparent;
+
+      border: none;
+    }
+
+
+    /* =====================================================
+       DEBUG
+       ====================================================== */
+
+    pre {
+
+      background: #222;
+
+      color: white;
+
+      padding: 15px;
+
+      border-radius: 8px;
+
+      overflow-x: auto;
+
+      min-height: 100px;
+    }
+
+
+    /* =====================================================
+       HOSPITAL DATA CONFIRMATION
+       ====================================================== */
+
+    .confirmation-card {
+      margin-top: 15px;
+      padding: 18px;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      background: #fff7ed;
+    }
+
+    .confirmation-status {
+      margin: 10px 0;
+      font-size: 14px;
+      color: #92400e;
+    }
+
+    .confirmation-button {
+      border: none;
+      border-radius: 8px;
+      padding: 11px 16px;
+      background: #2563eb;
+      color: white;
+      font-size: 14px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .confirmation-button:hover {
+      background: #1d4ed8;
+    }
+
+    .confirmation-button:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .confirmation-success {
+      background: #ecfdf5;
+      border-color: #86efac;
+    }
+
+    .confirmation-success .confirmation-status {
+      color: #166534;
+      font-weight: bold;
+    }
+
+    /* =====================================================
+       RESPONSIVE
+       ====================================================== */
+
+    @media (max-width: 700px) {
+
+      body {
+        padding: 15px;
+      }
+
+
+      .service-details {
+
+        grid-template-columns: 1fr;
+      }
+
+
+      #map {
+
+        height: 450px;
+      }
+
+    }
+
+  </style>
+
+</head>
+
+
+<body>
+
+
+<div class="container">
+
+
+  <!-- =====================================================
+       HEADER
+       ====================================================== -->
+
+  <div class="card">
+
+    <h1>
+      Smart Referral System
+    </h1>
+
+    <p>
+      Real-time ambulance tracking and hospital
+      service availability.
+    </p>
+
+  </div>
+
+
+  <!-- =====================================================
+       CONNECTION
+       ====================================================== -->
+
+  <div class="card">
+
+    <h2>
+      System Connection
+    </h2>
+
+    <div class="status-box">
+
+      <strong>
+        Socket:
+      </strong>
+
+      <span id="connection">
+        Connecting...
+      </span>
+
+    </div>
+
+  </div>
+
+
+  <!-- =====================================================
+       HOSPITAL SERVICE STATUS
+       ====================================================== -->
+
+  <div class="card">
+
+    <div class="hospital-header">
+
+      <div>
+
+        <h2>
+          Hospital Service Status
+        </h2>
+
+        <div>
+          Metro General Hospital
+        </div>
+
+      </div>
+
+
+      <div class="live-badge">
+        ● LIVE
+      </div>
+
+    </div>
+
+
+    <div
+      id="serviceCard"
+      class="service-card"
+    >
+
+      <div class="service-top">
+
+        <div
+          id="serviceName"
+          class="service-name"
+        >
+          Emergency Care
+        </div>
+
+
+        <div
+          id="availabilityBadge"
+          class="availability available"
+        >
+          AVAILABLE
+        </div>
+
+      </div>
+
+
+      <div class="service-details">
+
+
+        <div class="service-detail">
+
+          <div class="detail-label">
+            Service Capacity
+          </div>
+
+          <div
+            id="serviceCapacity"
+            class="detail-value"
+          >
+            5
+          </div>
+
+        </div>
+
+
+        <div class="service-detail">
+
+          <div class="detail-label">
+            Hospital
+          </div>
+
+          <div
+            id="hospitalName"
+            class="detail-value"
+          >
+            Metro General Hospital
+          </div>
+
+        </div>
+
+
+        <div class="service-detail">
+
+          <div class="detail-label">
+            Last Update
+          </div>
+
+          <div
+            id="serviceUpdatedAt"
+            class="detail-value"
+          >
+            Waiting...
+          </div>
+
+        </div>
+
+
+      </div>
+
+
+      <div
+        id="serviceUpdateStatus"
+        class="service-update-status"
+      >
+        Waiting for real-time hospital updates...
+      </div>
+
+    </div>
+
+  </div>
+
+
+
+  <!-- =====================================================
+       BED AVAILABILITY
+       ====================================================== -->
+
+  <div class="card">
+
+    <div class="hospital-header">
+
+      <div>
+        <h2>Bed Availability</h2>
+        <div>Metro General Hospital</div>
+      </div>
+
+      <div class="live-badge">
+        ● LIVE
+      </div>
+
+    </div>
+
+    <div id="bedCard" class="bed-card">
+
+      <div class="bed-top">
+
+        <div class="bed-name">
+          🛏️ Emergency Beds
+        </div>
+
+      </div>
+
+      <div class="bed-count">
+        <span id="availableBeds">--</span>
+        <span>available /</span>
+        <span id="totalBeds">--</span>
+        <span>total</span>
+      </div>
+
+      <div
+        id="bedUpdatedAt"
+        class="bed-update-status"
+      >
+        Waiting for bed availability...
+      </div>
+
+    </div>
+
+  </div>
+
+
+  <!-- =====================================================
+       HOSPITAL DATA CONFIRMATION
+       ====================================================== -->
+
+  <div class="card">
+    <div class="hospital-header">
+      <div>
+        <h2>Hospital Data Verification</h2>
+        <div>Metro General Hospital</div>
+      </div>
+
+      <div id="confirmationBadge" class="live-badge">
+        ● VERIFICATION NEEDED
+      </div>
+    </div>
+
+    <div id="confirmationCard" class="confirmation-card">
+      <div id="confirmationStatus" class="confirmation-status">
+        ⚠️ Bed availability may need confirmation from the hospital.
+      </div>
+
+      <button id="confirmHospitalBtn" class="confirmation-button">
+        📞 Call Hospital to Confirm
+      </button>
+    </div>
+  </div>
+
+
+  <!-- =====================================================
+       AMBULANCE COORDINATES
+       ====================================================== -->
+
+  <div class="card">
+
+    <h2>
+      Ambulance Location
+    </h2>
+
+
+    <div class="coordinates">
+
+
+      <div class="coordinate">
+
+        <div class="coordinate-title">
+          Latitude
+        </div>
+
+        <div
+          id="latitude"
+          class="value"
+        >
+          --
+        </div>
+
+      </div>
+
+
+      <div class="coordinate">
+
+        <div class="coordinate-title">
+          Longitude
+        </div>
+
+        <div
+          id="longitude"
+          class="value"
+        >
+          --
+        </div>
+
+      </div>
+
+
+    </div>
+
+
+    <p>
+
+      Location Updates:
+
+      <span id="updateCount">
+        0
+      </span>
+
+    </p>
+
+  </div>
+
+
+  <!-- =====================================================
+       MAP
+       ====================================================== -->
+
+  <div class="card">
+
+    <h2>
+      Live Map
+    </h2>
+
+    <div id="map"></div>
+
+  </div>
+
+
+  <!-- =====================================================
+       DEBUG
+       ====================================================== -->
+
+  <div class="card">
+
+    <h2>
+      Latest Ambulance Socket Event
+    </h2>
+
+    <pre id="locationOutput">
+Waiting for location update...
+    </pre>
+
+  </div>
+
+
+  <div class="card">
+
+    <h2>
+      Latest Hospital Service Event
+    </h2>
+
+    <pre id="hospitalServiceOutput">
+Waiting for hospital service update...
+    </pre>
+
+  
+  <div class="card">
+
+    <h2>
+      Latest Hospital Bed Event
+    </h2>
+
+    <pre id="hospitalBedOutput">
+Waiting for hospital bed update...
+    </pre>
+
+  </div>
+</div>
+
+
+</div>
+
+
+<script>
+
+
+  // ========================================================
+  // CONFIGURATION
+  // ========================================================
+
+
+  const REFERRAL_ID = 2;
+
+
+  const HOSPITAL_ID = 2;
+
+
+  const SERVICE_ID = 2;
+
+
+  /*
+    Metro General Hospital
+
+    latitude  = 28.6304
+    longitude = 77.2177
+  */
+
+
+  const HOSPITAL_LOCATION = [
+
+    28.6304,
+
+    77.2177
+
+  ];
+
+
+  // ========================================================
+  // MAP INITIALIZATION
+  // ========================================================
+
+
+  const map =
+
+    L.map("map").setView(
+
+      HOSPITAL_LOCATION,
+
+      14
+
+    );
+
+
+  // ========================================================
+  // OPENSTREETMAP
+  // ========================================================
+
+
+  L.tileLayer(
+
+    "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+
+    {
+
+      attribution:
+        "&copy; OpenStreetMap contributors"
+
+    }
+
+  ).addTo(map);
+
+
+  // ========================================================
+  // HOSPITAL ICON
+  // ========================================================
+
+
+  const hospitalIcon =
+
+    L.divIcon({
+
+      className:
+        "hospital-icon",
+
+      html: `
+
+        <div class="hospital-marker">
+
+          🏥
+
+        </div>
+
+      `,
+
+      iconSize: [
+
+        64,
+
+        64
+
+      ],
+
+      iconAnchor: [
+
+        32,
+
+        32
+
+      ]
+
+    });
+
+
+  // ========================================================
+  // HOSPITAL MARKER
+  // ========================================================
+
+
+  const hospitalMarker =
+
+    L.marker(
+
+      HOSPITAL_LOCATION,
+
+      {
+
+        icon:
+          hospitalIcon,
+
+        zIndexOffset:
+          5000
+
+      }
+
+    ).addTo(map);
+
+
+  hospitalMarker.bindPopup(`
+
+    <strong>
+      Metro General Hospital
+    </strong>
+
+    <br><br>
+
+    Destination Hospital
+
+    <br>
+
+    Referral ID:
+    ${REFERRAL_ID}
+
+  `);
+
+
+  // ========================================================
+  // AMBULANCE ICON
+  // ========================================================
+
+
+  const ambulanceIcon =
+
+    L.divIcon({
+
+      className:
+        "ambulance-icon",
+
+      html: `
+
+        <div class="ambulance-marker">
+
+          <div class="ambulance-marker-text">
+            AMB
+          </div>
+
+          <div
+            class="ambulance-cross-vertical">
+          </div>
+
+          <div
+            class="ambulance-cross-horizontal">
+          </div>
+
+          <div
+            class="ambulance-wheel ambulance-wheel-left">
+          </div>
+
+          <div
+            class="ambulance-wheel ambulance-wheel-right">
+          </div>
+
+          <div class="ambulance-label">
+            AMBULANCE
+          </div>
+
+        </div>
+
+      `,
+
+      iconSize: [
+
+        76,
+
+        75
+
+      ],
+
+      iconAnchor: [
+
+        38,
+
+        27
+
+      ]
+
+    });
+
+
+  // ========================================================
+  // AMBULANCE MARKER
+  // ========================================================
+
+
+  let ambulanceMarker = null;
+
+
+  // ========================================================
+  // SOCKET.IO CONNECTION
+  // ========================================================
+
+
+  const socket =
+
+    io("http://localhost:5000");
+
+
+  // ========================================================
+  // HTML REFERENCES
+  // ========================================================
+
+
+  const connectionElement =
+
+    document.getElementById(
+      "connection"
+    );
+
+
+  const latitudeElement =
+
+    document.getElementById(
+      "latitude"
+    );
+
+
+  const longitudeElement =
+
+    document.getElementById(
+      "longitude"
+    );
+
+
+  const updateCountElement =
+
+    document.getElementById(
+      "updateCount"
+    );
+
+
+  const locationOutput =
+
+    document.getElementById(
+      "locationOutput"
+    );
+
+
+  // ========================================================
+  // HOSPITAL SERVICE ELEMENTS
+  // ========================================================
+
+
+  const serviceCard =
+
+    document.getElementById(
+      "serviceCard"
+    );
+
+
+  const serviceNameElement =
+
+    document.getElementById(
+      "serviceName"
+    );
+
+
+  const hospitalNameElement =
+
+    document.getElementById(
+      "hospitalName"
+    );
+
+
+  const serviceCapacityElement =
+
+    document.getElementById(
+      "serviceCapacity"
+    );
+
+
+  const availabilityBadge =
+
+    document.getElementById(
+      "availabilityBadge"
+    );
+
+
+  const serviceUpdatedAtElement =
+
+    document.getElementById(
+      "serviceUpdatedAt"
+    );
+
+
+  const serviceUpdateStatusElement =
+
+    document.getElementById(
+      "serviceUpdateStatus"
+    );
+
+
+  const hospitalServiceOutput =
+
+    document.getElementById(
+      "hospitalServiceOutput"
+    );
+
+  // ========================================================
+  // HOSPITAL BED ELEMENTS
+  // ========================================================
+
+  const bedCard =
+    document.getElementById("bedCard");
+
+  const availableBedsElement =
+    document.getElementById("availableBeds");
+
+  const totalBedsElement =
+    document.getElementById("totalBeds");
+
+  const bedUpdatedAtElement =
+    document.getElementById("bedUpdatedAt");
+
+  const hospitalBedOutput =
+    document.getElementById("hospitalBedOutput");
+
+  // ========================================================
+  // HOSPITAL CONFIRMATION ELEMENTS
+  // ========================================================
+
+  const confirmationCard =
+    document.getElementById("confirmationCard");
+
+  const confirmationStatus =
+    document.getElementById("confirmationStatus");
+
+  const confirmationBadge =
+    document.getElementById("confirmationBadge");
+
+  const confirmHospitalBtn =
+    document.getElementById("confirmHospitalBtn");
+
+
+
+  // ========================================================
+  // UPDATE COUNTER
+  // ========================================================
+
+
+
+  // ========================================================
+  // DUMMY HOSPITAL CALL / CONFIRMATION
+  // ========================================================
+
+  confirmHospitalBtn.addEventListener("click", async () => {
+    confirmHospitalBtn.disabled = true;
+    confirmHospitalBtn.textContent = "📞 Calling hospital...";
+
+    confirmationStatus.textContent =
+      "Calling Metro General Hospital for bed availability confirmation...";
+
+    try {
+      const response = await fetch(
+        `http://localhost:5000/api/hospitals/${HOSPITAL_ID}/confirm`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            dataType: "BED_AVAILABILITY"
+          })
+        }
+      );
+
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        throw new Error(
+          result.message || "Hospital confirmation failed"
+        );
+      }
+
+      const confirmation = result.data || {};
+
+      confirmationCard.classList.add("confirmation-success");
+      confirmationBadge.textContent = "● VERIFIED";
+
+      confirmationStatus.innerHTML =
+        `✓ Hospital confirmed bed availability.<br>
+         Source: Manual Call<br>
+         Verified: ${new Date(
+           confirmation.updatedAt || Date.now()
+         ).toLocaleTimeString()}`;
+
+      confirmHospitalBtn.textContent = "✓ Hospital Confirmed";
+
+      console.log(
+        "Hospital data confirmation:",
+        confirmation
+      );
+    } catch (error) {
+      console.error(
+        "Hospital confirmation failed:",
+        error
+      );
+
+      confirmationStatus.textContent =
+        "❌ Unable to confirm hospital data. Please try again.";
+
+      confirmHospitalBtn.disabled = false;
+      confirmHospitalBtn.textContent =
+        "📞 Call Hospital to Confirm";
+    }
+  });
+
+
+  // ========================================================
+  // LOAD INITIAL HOSPITAL BED AVAILABILITY
+  // ========================================================
+
+  async function loadBedAvailability() {
+
+    try {
+
+      const response = await fetch(
+        `http://localhost:5000/api/hospitals/${HOSPITAL_ID}/beds`
+      );
+
+      const result = await response.json();
+
+      if (!result.success) {
+        console.error("Failed to load bed availability:", result);
+        return;
+      }
+
+      const emergencyBed = result.data.find(
+        (bed) => bed.bedType === "Emergency"
+      );
+
+      if (!emergencyBed) {
+        console.warn("Emergency bed data not found");
+        return;
+      }
+
+      availableBedsElement.textContent =
+        emergencyBed.availableBeds;
+
+      totalBedsElement.textContent =
+        emergencyBed.totalBeds;
+
+      if (emergencyBed.updatedAt) {
+        bedUpdatedAtElement.textContent =
+          `Updated: ${new Date(
+            emergencyBed.updatedAt
+          ).toLocaleTimeString()}`;
+      }
+
+    } catch (error) {
+
+      console.error(
+        "Failed to load bed availability:",
+        error
+      );
+
+      bedUpdatedAtElement.textContent =
+        "Unable to load bed availability";
+
+    }
+
+  }
+
+  loadBedAvailability();
+
+
+  let updateCount = 0;
+
+
+  // ========================================================
+  // SOCKET CONNECT
+  // ========================================================
+
+
+  socket.on(
+
+    "connect",
+
+    () => {
+
+
+      console.log(
+        "================================"
+      );
+
+
+      console.log(
+        "SOCKET CONNECTED"
+      );
+
+
+      console.log(
+        "Socket ID:",
+        socket.id
+      );
+
+
+      console.log(
+        "================================"
+      );
+
+
+      connectionElement.textContent =
+        "Connected";
+
+
+      connectionElement.className =
+        "status-online";
+
+
+      // ====================================================
+      // JOIN REFERRAL ROOM
+      // ====================================================
+
+
+      socket.emit(
+
+        "join-referral",
+
+        REFERRAL_ID
+
+      );
+
+
+      console.log(
+
+        "Joined referral room:",
+
+        `referral-${REFERRAL_ID}`
+
+      );
+
+    }
+
+  );
+
+
+  // ========================================================
+  // HOSPITAL SERVICE UPDATE EVENT
+  // ========================================================
+
+
+  socket.on(
+
+    "hospital-service-updated",
+
+    (data) => {
+
+
+      console.log(
+        "================================"
+      );
+
+
+      console.log(
+        "HOSPITAL SERVICE UPDATE RECEIVED"
+      );
+
+
+      console.log(
+        "Data:",
+        data
+      );
+
+
+      console.log(
+        "================================"
+      );
+
+
+      // ====================================================
+      // IGNORE OTHER HOSPITALS
+      // ====================================================
+
+
+      if (
+        Number(data.hospitalId) !==
+        HOSPITAL_ID
+      ) {
+
+        console.log(
+          "Ignoring update for another hospital"
+        );
+
+        return;
+
+      }
+
+
+      // ====================================================
+      // IGNORE OTHER SERVICES
+      // ====================================================
+
+
+      if (
+        Number(data.serviceId) !==
+        SERVICE_ID
+      ) {
+
+        console.log(
+          "Ignoring update for another service"
+        );
+
+        return;
+
+      }
+
+
+      // ====================================================
+      // UPDATE SERVICE NAME
+      // ====================================================
+
+
+      if (data.serviceName) {
+
+        serviceNameElement.textContent =
+          data.serviceName;
+
+      }
+
+
+      // ====================================================
+      // UPDATE HOSPITAL NAME
+      // ====================================================
+
+
+      if (data.hospitalName) {
+
+        hospitalNameElement.textContent =
+          data.hospitalName;
+
+      }
+
+
+      // ====================================================
+      // UPDATE CAPACITY
+      // ====================================================
+
+
+      if (
+        data.capacity !== null &&
+        data.capacity !== undefined
+      ) {
+
+        serviceCapacityElement.textContent =
+          data.capacity;
+
+      }
+
+      else {
+
+        serviceCapacityElement.textContent =
+          "--";
+
+      }
+
+
+      // ====================================================
+      // UPDATE AVAILABILITY
+      // ====================================================
+
+
+      if (data.isAvailable === true) {
+
+
+        availabilityBadge.textContent =
+          "AVAILABLE";
+
+
+        availabilityBadge.className =
+          "availability available";
+
+
+      }
+
+      else {
+
+
+        availabilityBadge.textContent =
+          "UNAVAILABLE";
+
+
+        availabilityBadge.className =
+          "availability unavailable";
+
+      }
+
+
+      // ====================================================
+      // UPDATE TIME
+      // ====================================================
+
+
+      if (data.updatedAt) {
+
+        const updateDate =
+          new Date(
+            data.updatedAt
+          );
+
+
+        serviceUpdatedAtElement.textContent =
+
+          updateDate.toLocaleTimeString();
+
+      }
+
+
+      // ====================================================
+      // UPDATE STATUS MESSAGE
+      // ====================================================
+
+
+      serviceUpdateStatusElement.textContent =
+
+        "● Updated live just now";
+
+
+      // ====================================================
+      // FLASH CARD
+      // ====================================================
+
+
+      serviceCard.classList.remove(
+        "live-update"
+      );
+
+
+      void serviceCard.offsetWidth;
+
+
+      serviceCard.classList.add(
+        "live-update"
+      );
+
+
+      // ====================================================
+      // DEBUG OUTPUT
+      // ====================================================
+
+
+      hospitalServiceOutput.textContent =
+
+        JSON.stringify(
+
+          data,
+
+          null,
+
+          2
+
+        );
+
+
+    }
+
+  );
+
+
+
+  // ========================================================
+  // HOSPITAL BED UPDATE EVENT
+  // ========================================================
+
+  socket.on(
+    "hospital-bed-updated",
+    (data) => {
+
+      console.log("================================");
+      console.log("HOSPITAL BED UPDATE RECEIVED");
+      console.log("Data:", data);
+      console.log("================================");
+
+      if (Number(data.hospitalId) !== HOSPITAL_ID) {
+        console.log(
+          "Ignoring bed update for another hospital"
+        );
+        return;
+      }
+
+      if (data.bedType !== "Emergency") {
+        console.log(
+          "Ignoring bed update for another bed type"
+        );
+        return;
+      }
+
+      availableBedsElement.textContent =
+        data.availableBeds;
+
+      totalBedsElement.textContent =
+        data.totalBeds;
+
+      if (data.updatedAt) {
+        bedUpdatedAtElement.textContent =
+          `Updated live: ${new Date(
+            data.updatedAt
+          ).toLocaleTimeString()}`;
+      } else {
+        bedUpdatedAtElement.textContent =
+          "Updated live just now";
+      }
+
+      bedCard.classList.remove("bed-live-update");
+      void bedCard.offsetWidth;
+      bedCard.classList.add("bed-live-update");
+
+      hospitalBedOutput.textContent =
+        JSON.stringify(data, null, 2);
+    }
+  );
+
+
+  // ========================================================
+  // HOSPITAL DATA CONFIRMED EVENT
+  // ========================================================
+
+  socket.on(
+    "hospital-data-confirmed",
+    (data) => {
+      console.log("================================");
+      console.log("HOSPITAL DATA CONFIRMED");
+      console.log("Data:", data);
+      console.log("================================");
+
+      if (Number(data.hospitalId) !== HOSPITAL_ID) {
+        return;
+      }
+
+      if (data.dataType !== "BED_AVAILABILITY") {
+        return;
+      }
+
+      confirmationCard.classList.add("confirmation-success");
+      confirmationBadge.textContent = "● VERIFIED";
+
+      confirmationStatus.innerHTML =
+        `✓ Hospital confirmed bed availability.<br>
+         Source: ${data.source || "MANUAL_CALL"}<br>
+         Verified: ${new Date(
+           data.updatedAt || Date.now()
+         ).toLocaleTimeString()}`;
+
+      confirmHospitalBtn.textContent = "✓ Hospital Confirmed";
+      confirmHospitalBtn.disabled = true;
+    }
+  );
+
+
+  // ========================================================
+  // LOCATION UPDATE EVENT
+  // ========================================================
+
+
+  socket.on(
+
+    "location-update",
+
+    (data) => {
+
+
+      console.log(
+        "================================"
+      );
+
+
+      console.log(
+        "LOCATION UPDATE RECEIVED"
+      );
+
+
+      console.log(
+        "Data:",
+        data
+      );
+
+
+      console.log(
+        "================================"
+      );
+
+
+      // ====================================================
+      // GET COORDINATES
+      // ====================================================
+
+
+      const lat =
+
+        Number(
+          data.latitude
+        );
+
+
+      const lng =
+
+        Number(
+          data.longitude
+        );
+
+
+      // ====================================================
+      // VALIDATE
+      // ====================================================
+
+
+      if (
+
+        !Number.isFinite(lat) ||
+
+        !Number.isFinite(lng)
+
+      ) {
+
+        console.error(
+
+          "Invalid latitude/longitude:",
+
+          data
+
+        );
+
+        return;
+
+      }
+
+
+      // ====================================================
+      // UPDATE TEXT
+      // ====================================================
+
+
+      latitudeElement.textContent =
+
+        lat.toFixed(6);
+
+
+      longitudeElement.textContent =
+
+        lng.toFixed(6);
+
+
+      // ====================================================
+      // UPDATE COUNTER
+      // ====================================================
+
+
+      updateCount++;
+
+
+      updateCountElement.textContent =
+
+        updateCount;
+
+
+      // ====================================================
+      // UPDATE DEBUG PANEL
+      // ====================================================
+
+
+      locationOutput.textContent =
+
+        JSON.stringify(
+
+          data,
+
+          null,
+
+          2
+
+        );
+
+
+      // ====================================================
+      // NEW POSITION
+      // ====================================================
+
+
+      const newPosition = [
+
+        lat,
+
+        lng
+
+      ];
+
+
+      console.log(
+
+        "New ambulance position:",
+
+        newPosition
+
+      );
+
+
+      // ====================================================
+      // FIRST LOCATION UPDATE
+      // ====================================================
+
+
+      if (
+        ambulanceMarker === null
+      ) {
+
+
+        console.log(
+          "Creating ambulance marker..."
+        );
+
+
+        ambulanceMarker =
+
+          L.marker(
+
+            newPosition,
+
+            {
+
+              icon:
+                ambulanceIcon,
+
+              zIndexOffset:
+                10000
+
+            }
+
+          );
+
+
+        ambulanceMarker.addTo(
+          map
+        );
+
+
+        // ==================================================
+        // POPUP
+        // ==================================================
+
+
+        ambulanceMarker.bindPopup(`
+
+          <strong>
+            AMBULANCE
+          </strong>
+
+          <br><br>
+
+          Medical Staff:
+          ${data.medicalStaffId}
+
+          <br>
+
+          Referral:
+          ${data.referralId}
+
+          <br><br>
+
+          Latitude:
+          ${lat.toFixed(6)}
+
+          <br>
+
+          Longitude:
+          ${lng.toFixed(6)}
+
+        `);
+
+
+        ambulanceMarker.openPopup();
+
+
+        console.log(
+          "AMBULANCE MARKER CREATED"
+        );
+
+
+      }
+
+
+      // ====================================================
+      // SUBSEQUENT LOCATION UPDATE
+      // ====================================================
+
+
+      else {
+
+
+        console.log(
+          "Moving ambulance marker..."
+        );
+
+
+        ambulanceMarker.setLatLng(
+
+          newPosition
+
+        );
+
+
+        // ==================================================
+        // UPDATE POPUP
+        // ==================================================
+
+
+        ambulanceMarker.setPopupContent(`
+
+          <strong>
+            AMBULANCE
+          </strong>
+
+          <br><br>
+
+          Medical Staff:
+          ${data.medicalStaffId}
+
+          <br>
+
+          Referral:
+          ${data.referralId}
+
+          <br><br>
+
+          Latitude:
+          ${lat.toFixed(6)}
+
+          <br>
+
+          Longitude:
+          ${lng.toFixed(6)}
+
+        `);
+
+      }
+
+
+      // ====================================================
+      // CENTER MAP
+      // ====================================================
+
+
+      map.setView(
+
+        newPosition,
+
+        15
+
+      );
+
+
+      console.log(
+
+        "Ambulance marker exists:",
+
+        ambulanceMarker !== null
+
+      );
+
+
+    }
+
+  );
+
+
+  // ========================================================
+  // SOCKET DISCONNECT
+  // ========================================================
+
+
+  socket.on(
+
+    "disconnect",
+
+    () => {
+
+
+      console.log(
+        "Socket disconnected"
+      );
+
+
+      connectionElement.textContent =
+        "Disconnected";
+
+
+      connectionElement.className =
+        "status-offline";
+
+    }
+
+  );
+
+
+  // ========================================================
+  // SOCKET ERROR
+  // ========================================================
+
+
+  socket.on(
+
+    "connect_error",
+
+    (error) => {
+
+
+      console.error(
+
+        "Socket connection error:",
+
+        error
+
+      );
+
+
+      connectionElement.textContent =
+        "Connection Error";
+
+
+      connectionElement.className =
+        "status-offline";
+
+    }
+
+  );
+
+
+</script>
+
+
+</body>
+
+</html>
