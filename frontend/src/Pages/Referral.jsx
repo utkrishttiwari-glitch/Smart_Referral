@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 const API_BASE_URL = "http://localhost:5000";
@@ -416,7 +416,7 @@ function Referral() {
 
             <div>
               <h1 className="text-lg font-bold tracking-tight text-blue-900">
-                SmartReferral
+                MedRoute
               </h1>
 
               <p className="text-[10px] font-medium uppercase tracking-widest text-slate-400">
@@ -442,7 +442,7 @@ function Referral() {
 
         <div className="mb-10 max-w-3xl">
           <p className="mb-3 text-sm font-bold uppercase tracking-widest text-blue-600">
-            Smart Referral
+            MedRoute
           </p>
 
           <h2 className="text-3xl font-bold tracking-tight text-slate-900 md:text-4xl">
@@ -451,7 +451,7 @@ function Referral() {
 
           <p className="mt-4 text-base leading-7 text-slate-500">
             Enter the patient's details and required
-            service. SmartReferral compares eligible
+            service. MedRoute compares eligible
             hospitals using service availability,
             capacity, distance, data freshness, and
             reliability.
@@ -1268,3 +1268,4 @@ function Referral() {
 }
 
 export default Referral;
+

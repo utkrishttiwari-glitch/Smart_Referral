@@ -93,20 +93,39 @@ export async function getHospitalServices(req, res) {
       });
     }
 
-    const services = await db.orm.public.HospitalService
-      .where({
-        hospitalId,
-      })
-      .select(
-        "id",
-        "hospitalId",
-        "serviceId",
-        "isAvailable",
-        "capacity",
-        "notes",
-        "updatedAt"
-      )
-      .all();
+    const serviceResult = await pool.query(
+      `
+      SELECT s."id" AS "serviceId", s."name" AS "serviceName", s."description",
+        hs."id", hs."hospitalId", COALESCE(hs."isAvailable", false) AS "isAvailable",
+        hs."capacity", hs."notes", hs."updatedAt",
+        latest_update."source", latest_update."isVerified", latest_update."updatedAt" AS "dataUpdatedAt"
+      FROM "service" s
+      LEFT JOIN "hospitalService" hs ON hs."serviceId" = s."id" AND hs."hospitalId" = $1
+      LEFT JOIN LATERAL (
+        SELECT "source", "isVerified", "updatedAt"
+        FROM "hospitalDataUpdate"
+        WHERE "hospitalId" = $1 AND "dataType" = 'SERVICE_AVAILABILITY'
+        ORDER BY "updatedAt" DESC LIMIT 1
+      ) AS latest_update ON true
+      WHERE s."isActive" = true
+      ORDER BY s."name" ASC
+      `,
+      [hospitalId]
+    );
+
+    const services = serviceResult.rows.map((service) => {
+      const freshness = calculateFreshness(service.dataUpdatedAt || service.updatedAt);
+      return {
+        ...service,
+        confidence: service.isVerified && freshness.confidence === "HIGH"
+          ? "VERY_HIGH"
+          : service.isVerified && freshness.confidence === "MEDIUM"
+            ? "MEDIUM"
+            : freshness.confidence,
+        isUpdatedToday: freshness.isUpdatedToday,
+        ageMinutes: freshness.ageMinutes,
+      };
+    });
 
     res.json({
       success: true,
@@ -313,22 +332,14 @@ export function updateHospitalService(io) {
           serviceId,
         });
 
-      if (!hospitalService) {
-        return res.status(404).json({
-          success: false,
-          message:
-            "This service is not configured for the hospital",
-        });
-      }
-
       const newCapacity =
         capacity === undefined
-          ? hospitalService.capacity
+          ? hospitalService?.capacity ?? null
           : Number(capacity);
 
       const newNotes =
         notes === undefined
-          ? hospitalService.notes
+          ? hospitalService?.notes ?? null
           : notes || null;
 
       /*
@@ -337,15 +348,14 @@ export function updateHospitalService(io) {
        */
       const result = await pool.query(
         `
-       UPDATE "hospitalService"
-        SET
+       INSERT INTO "hospitalService"
+        ("hospitalId", "serviceId", "isAvailable", "capacity", "notes", "updatedAt")
+        VALUES ($4, $5, $1, $2, $3, NOW())
+        ON CONFLICT ("hospitalId", "serviceId") DO UPDATE SET
           "isAvailable" = $1,
           "capacity" = $2,
           "notes" = $3,
           "updatedAt" = NOW()
-        WHERE
-          "hospitalId" = $4
-          AND "serviceId" = $5
         RETURNING
           "id",
           "hospitalId",
@@ -365,6 +375,15 @@ export function updateHospitalService(io) {
       );
 
       const updatedService = result.rows[0];
+
+      await pool.query(
+        `
+        INSERT INTO "hospitalDataUpdate"
+          ("hospitalId", "source", "dataType", "updatedAt", "isVerified")
+        VALUES ($1, 'MANUAL', 'SERVICE_AVAILABILITY', NOW(), false)
+        `,
+        [hospitalId]
+      );
 
       /*
        * Broadcast to everyone listening to hospital updates.

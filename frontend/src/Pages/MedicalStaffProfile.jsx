@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import PortalNav from "../components/PortalNav";
 
@@ -11,3 +11,4 @@ function MedicalStaffProfile() {
 }
 function Info({ label, value }) { return <div className="rounded-2xl bg-slate-50 p-4"><dt className="text-xs font-bold uppercase tracking-widest text-slate-400">{label}</dt><dd className="mt-2 text-sm font-bold text-slate-800">{value}</dd></div>; }
 export default MedicalStaffProfile;
+

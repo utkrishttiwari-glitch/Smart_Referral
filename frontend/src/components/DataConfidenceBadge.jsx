@@ -1,4 +1,4 @@
-function DataConfidenceBadge({ recommendation, onConfirm }) {
+﻿function DataConfidenceBadge({ recommendation, onConfirm }) {
   const eligibility = recommendation?.instantEligibility || {};
   const freshness = recommendation?.freshness || {};
   const confidence = String(eligibility.instantReferralConfidence || (freshness.confidence === "HIGH" && recommendation?.dataVerified ? "VERY_HIGH" : freshness.confidence || "LOW")).replace("VERY_LOW", "LOW").toUpperCase();
@@ -13,3 +13,4 @@ function DataConfidenceBadge({ recommendation, onConfirm }) {
 }
 
 export default DataConfidenceBadge;
+

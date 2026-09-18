@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+﻿import { useEffect, useState } from "react";
 import PortalNav from "../components/PortalNav";
 import DataConfidenceBadge from "../components/DataConfidenceBadge";
+import { useSearchParams } from "react-router-dom";
 
 const API_BASE_URL = "http://localhost:5000";
 
@@ -14,6 +15,7 @@ function PatientHospitals() {
   const [searching, setSearching] = useState(false);
   const [error, setError] = useState("");
   const [confirming, setConfirming] = useState(null);
+  const [searchParams] = useSearchParams();
 
   useEffect(() => {
     fetch(`${API_BASE_URL}/api/services`)
@@ -21,10 +23,12 @@ function PatientHospitals() {
         const result = await response.json();
         if (!response.ok || !result.success) throw new Error(result.message || "Unable to load care services.");
         setServices(result.data || []);
+        const requestedService = searchParams.get("service");
+        if (requestedService) setServiceId(requestedService);
       })
       .catch((requestError) => setError(requestError.message))
       .finally(() => setLoading(false));
-  }, []);
+  }, [searchParams]);
 
   async function findHospitals(event) {
     event.preventDefault();
@@ -61,7 +65,7 @@ function PatientHospitals() {
     const hospitalId = recommendation.hospital?.id;
     setConfirming(hospitalId);
     try {
-      await fetch(`${API_BASE_URL}/api/hospitals/${hospitalId}/confirm`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ dataType: "BED_AVAILABILITY" }) });
+      await fetch(`${API_BASE_URL}/api/hospitals/${hospitalId}/confirm`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ dataType: "SERVICE_AVAILABILITY" }) });
       if (serviceId) await findHospitals({ preventDefault() {} });
     } finally { setConfirming(null); }
   }
@@ -69,17 +73,19 @@ function PatientHospitals() {
   const selectedService = services.find((service) => String(service.id) === String(serviceId));
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="sr-page min-h-screen">
       <PortalNav role="patient" />
-      <main className="mx-auto max-w-7xl px-5 py-10 md:px-8">
-        <div className="max-w-3xl"><p className="text-sm font-bold uppercase tracking-[0.2em] text-blue-600">Hospital recommendation</p><h1 className="mt-3 text-4xl font-extrabold tracking-tight text-slate-900">Find care that fits your needs.</h1><p className="mt-4 leading-7 text-slate-500">Choose a service and SmartReferral will compare real hospital availability, capacity, distance, and data freshness.</p></div>
+      <main className="sr-shell sr-search-page py-8 md:py-12">
+        <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end"><div className="max-w-3xl"><p className="sr-eyebrow">Patient portal · Find hospital</p><h1 className="sr-title mt-3 text-4xl font-black md:text-5xl">Find the right hospital.</h1><p className="mt-4 leading-7 text-[#6f8198]">Choose the service you need. MedRoute compares current availability, capacity, distance and data confidence.</p></div><span className="sr-live">Live matching</span></div>
 
-        <form onSubmit={findHospitals} className="mt-8 rounded-3xl bg-white p-6 shadow-sm md:p-8"><label htmlFor="patient-service" className="text-lg font-bold text-slate-900">What kind of care do you need?</label><div className="mt-4 flex flex-col gap-3 sm:flex-row"><select id="patient-service" value={serviceId} onChange={(event) => setServiceId(event.target.value)} disabled={loading} className="min-h-12 flex-1 rounded-2xl border border-slate-200 bg-slate-50 px-4 text-sm outline-none focus:border-blue-500 focus:bg-white"><option value="">{loading ? "Loading care services..." : "Select a care service"}</option>{services.map((service) => <option key={service.id} value={service.id}>{service.name}</option>)}</select><button type="submit" disabled={searching || loading} className="min-h-12 rounded-2xl bg-blue-600 px-6 text-sm font-bold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60">{searching ? "Finding hospitals..." : "Find Hospitals"}</button></div>{selectedService && <p className="mt-3 text-sm text-slate-500">Looking for <strong className="text-slate-700">{selectedService.name}</strong> near the demo location.</p>}</form>
+        <div className="mt-8 grid gap-4 sm:grid-cols-3">{services.slice(0, 3).map((service) => <button key={service.id} type="button" onClick={() => setServiceId(String(service.id))} className={`sr-service-choice ${String(serviceId) === String(service.id) ? "selected" : ""}`}><span>{String(service.name).toLowerCase().includes("card") ? "♡" : String(service.name).toLowerCase().includes("trauma") ? "✦" : "✚"}</span><strong>{service.name}</strong><small>{service.description || "Current hospital availability"}</small></button>)}</div>
+
+        <form onSubmit={findHospitals} className="sr-search-form mt-5"><div><label htmlFor="patient-service" className="text-xs font-black uppercase tracking-wider text-[#8aa0b7]">Required service</label><select id="patient-service" value={serviceId} onChange={(event) => setServiceId(event.target.value)} disabled={loading} className="mt-2 min-h-12 w-full rounded-2xl border border-[#dce8f4] bg-[#f7fbff] px-4 text-sm font-bold text-[#34516f] outline-none focus:border-blue-500 focus:bg-white"><option value="">{loading ? "Loading care services..." : "Select a care service"}</option>{services.map((service) => <option key={service.id} value={service.id}>{service.name}</option>)}</select></div><div><span className="text-xs font-black uppercase tracking-wider text-[#8aa0b7]">Location</span><div className="mt-2 flex min-h-12 items-center rounded-2xl border border-[#dce8f4] bg-[#f7fbff] px-4 text-sm font-bold text-[#34516f]">⌖ Delhi demo location</div></div><button type="submit" disabled={searching || loading} className="sr-btn-primary min-h-12">{searching ? "Finding..." : "Search hospitals"} <span>↗</span></button>{selectedService && <p className="text-xs font-bold text-[#6f8198] sm:col-span-3">Looking for <strong className="text-[#34516f]">{selectedService.name}</strong> near the demo location.</p>}</form>
 
         {error && <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50 px-5 py-4 text-sm font-semibold text-amber-800">{error}</div>}
         {chosenHospital && <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm font-semibold text-emerald-800">{chosenHospital.name} is saved as your preferred hospital for this search. No referral was created.</div>}
 
-        {recommendations.length > 0 && <section className="mt-10"><div className="flex flex-wrap items-end justify-between gap-3"><div><p className="text-sm font-bold uppercase tracking-widest text-slate-400">{selectedService?.name || "Selected care"}</p><h2 className="mt-2 text-2xl font-bold text-slate-900">Recommended hospitals</h2></div><p className="text-sm text-slate-500">{recommendations.length} options found</p></div><div className="mt-5 grid gap-5 lg:grid-cols-2">{recommendations.map((recommendation, index) => <HospitalCard key={recommendation.hospital?.id || index} recommendation={recommendation} index={index} confirming={confirming === recommendation.hospital?.id} onConfirm={() => confirmHospital(recommendation)} onView={() => setSelectedHospital(recommendation)} onChoose={() => setChosenHospital(recommendation.hospital)} />)}</div></section>}
+        {recommendations.length > 0 && <section className="mt-10"><div className="flex flex-wrap items-end justify-between gap-3"><div><p className="sr-eyebrow">{selectedService?.name || "Selected care"}</p><h2 className="sr-title mt-2 text-2xl font-black">Recommended hospitals</h2></div><p className="text-sm font-bold text-[#6f8198]">{recommendations.length} options found</p></div><div className="mt-5 grid gap-5 lg:grid-cols-2">{recommendations.map((recommendation, index) => <HospitalCard key={recommendation.hospital?.id || index} recommendation={recommendation} index={index} confirming={confirming === recommendation.hospital?.id} onConfirm={() => confirmHospital(recommendation)} onView={() => setSelectedHospital(recommendation)} onChoose={() => setChosenHospital(recommendation.hospital)} />)}</div></section>}
       </main>
       {selectedHospital && <HospitalDetails recommendation={selectedHospital} onClose={() => setSelectedHospital(null)} onChoose={() => { setChosenHospital(selectedHospital.hospital); setSelectedHospital(null); }} />}
     </div>
@@ -94,7 +100,7 @@ function HospitalCard({ recommendation, index, confirming, onConfirm, onView, on
   const confidence = String(freshness.confidence || "Unknown").toUpperCase();
   const reasons = patientReasons(recommendation, capacity);
 
-  return <article className={`rounded-3xl border bg-white p-6 shadow-sm ${index === 0 ? "border-blue-300 ring-2 ring-blue-100" : "border-slate-200"}`}><div className="flex items-start justify-between gap-4"><div><div className="flex flex-wrap items-center gap-2"><h3 className="text-xl font-bold text-slate-900">{hospital.name || "Hospital"}</h3>{index === 0 && <span className="rounded-full bg-blue-100 px-3 py-1 text-[10px] font-bold uppercase tracking-wide text-blue-700">Recommended</span>}</div><p className="mt-1 text-sm text-slate-500">{hospital.city || "Location available"}{hospital.state ? `, ${hospital.state}` : ""}</p></div></div><div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4"><Fact label="Service" value={service.isAvailable === false ? "Uncertain" : "Available"} /><Fact label="Beds" value={capacity} /><Fact label="Distance" value={`${formatNumber(recommendation.distanceKm)} km`} /><Fact label="Data" value={freshnessText(freshness)} /></div><div className="mt-5"><DataConfidenceBadge recommendation={recommendation} onConfirm={onConfirm} />{confirming && <p className="mt-2 text-xs font-semibold text-blue-700">Calling hospital... Prototype call simulation.</p>}</div><div className="mt-5 space-y-2">{reasons.map((reason) => <p key={reason} className="text-sm text-slate-600"><span className="mr-2 font-bold text-emerald-600">✓</span>{reason}</p>)}</div><div className="mt-6 flex flex-wrap gap-3"><button type="button" onClick={onView} className="rounded-full bg-blue-600 px-5 py-3 text-sm font-bold text-white hover:bg-blue-700">View Hospital</button><button type="button" onClick={onChoose} className="rounded-full border border-blue-200 px-5 py-3 text-sm font-bold text-blue-700 hover:bg-blue-50">Choose Hospital</button></div></article>;
+  return <article className={`sr-recommendation-card ${index === 0 ? "best-match" : ""}`}><div className="sr-hospital-visual"><span>🏥</span>{index === 0 && <b>BEST MATCH</b>}</div><div className="p-6"><div className="flex items-start justify-between gap-4"><div><div className="flex flex-wrap items-center gap-2"><h3 className="text-xl font-black text-[#0c2c59]">{hospital.name || "Hospital"}</h3>{index === 0 && <span className="rounded-full bg-[#eaf4ff] px-3 py-1 text-[10px] font-black uppercase tracking-wide text-[#1769e0]">Recommended</span>}</div><p className="mt-1 text-sm text-[#6f8198]">⌖ {hospital.city || "Location available"}{hospital.state ? `, ${hospital.state}` : ""} · {formatNumber(recommendation.distanceKm)} km</p></div></div><div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4"><Fact label="Service" value={service.isAvailable === false ? "Unavailable" : "Available"} /><Fact label="Capacity" value={capacity === "Not listed" ? capacity : `${capacity} available`} /><Fact label="Updated" value={freshnessText(freshness)} /><Fact label="Confidence" value={String(freshness.confidence || "Unknown").replaceAll("_", " ")} /></div><p className="mt-4 text-xs font-bold text-[#6f8198]">Data source: {recommendation.serviceDataSource || recommendation.dataSource || "Not recorded"}</p><div className="mt-5"><DataConfidenceBadge recommendation={recommendation} onConfirm={onConfirm} />{confirming && <p className="mt-2 text-xs font-bold text-[#1769e0]">Calling hospital... Prototype call simulation.</p>}</div><div className="mt-5 space-y-2">{reasons.slice(0, 4).map((reason) => <p key={reason} className="text-sm font-semibold text-[#536c86]"><span className="mr-2 font-black text-[#14845c]">✓</span>{reason}</p>)}</div><div className="mt-6 flex flex-wrap gap-3"><button type="button" onClick={onView} className="sr-btn-primary">View Hospital <span>→</span></button><button type="button" onClick={onChoose} className="sr-btn-secondary">Choose Hospital</button></div></div></article>;
 }
 
 function HospitalDetails({ recommendation, onClose, onChoose }) {
@@ -110,3 +116,5 @@ function freshnessText(freshness) { const age = Number(freshness.ageMinutes); if
 function isStale(freshness) { return String(freshness.confidence || "").toUpperCase() === "LOW" || Number(freshness.ageMinutes) > 60; }
 function patientReasons(recommendation, capacity) { const reasons = []; if (recommendation.service?.available !== false) reasons.push("Required care is available"); if (capacity !== "Not listed" && Number(capacity) > 0) reasons.push("Beds currently available"); if (Number(recommendation.distanceKm) <= 10) reasons.push("Nearby"); if (recommendation.freshness?.confidence === "HIGH") reasons.push("Hospital data was updated recently"); return reasons.length ? reasons : ["Matches your selected care needs"]; }
 export default PatientHospitals;
+
+

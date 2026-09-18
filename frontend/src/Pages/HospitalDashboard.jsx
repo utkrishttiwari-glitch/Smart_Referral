@@ -1,4 +1,4 @@
-import {
+﻿import {
   useCallback,
   useEffect,
   useState,
@@ -46,6 +46,12 @@ function HospitalDashboard() {
   const [dataStatus, setDataStatus] =
     useState([]);
 
+  const [services, setServices] = useState([]);
+  const [beds, setBeds] = useState([]);
+  const [serviceFilter, setServiceFilter] = useState("ALL");
+  const [editingService, setEditingService] = useState(null);
+  const [serviceSaving, setServiceSaving] = useState(false);
+
   /*
    * =======================================================
    * LOAD REFERRALS
@@ -90,6 +96,23 @@ function HospitalDashboard() {
           const statusResult = await statusResponse.json();
           if (statusResponse.ok && statusResult.success) {
             setDataStatus(statusResult.data || []);
+          }
+
+          const servicesResponse = await fetch(
+            `${BACKEND_URL}/api/hospitals/${HOSPITAL_ID}/services`
+          );
+          const servicesResult = await servicesResponse.json();
+          if (!servicesResponse.ok || !servicesResult.success) {
+            throw new Error(servicesResult.message || "Failed to load services.");
+          }
+          setServices(servicesResult.data || []);
+
+          const bedsResponse = await fetch(
+            `${BACKEND_URL}/api/hospitals/${HOSPITAL_ID}/beds`
+          );
+          const bedsResult = await bedsResponse.json();
+          if (bedsResponse.ok && bedsResult.success) {
+            setBeds(bedsResult.data || []);
           }
 
           setError("");
@@ -181,6 +204,16 @@ function HospitalDashboard() {
         });
       }
     );
+
+    socket.on("hospital-service-updated", (updatedService) => {
+      if (Number(updatedService.hospitalId) !== HOSPITAL_ID) return;
+      setServices((current) => current.map((service) => (
+        Number(service.serviceId) === Number(updatedService.serviceId)
+          ? { ...service, ...updatedService, serviceName: service.serviceName }
+          : service
+      )));
+      setNotification({ type: "info", message: `${updatedService.serviceName || "Service"} availability updated.` });
+    });
 
     return () => {
       socket.disconnect();
@@ -297,6 +330,35 @@ function HospitalDashboard() {
       setActionLoading(
         null
       );
+    }
+  }
+
+  async function saveService(serviceId, values) {
+    setServiceSaving(true);
+    try {
+      const response = await fetch(
+        `${BACKEND_URL}/api/hospitals/${HOSPITAL_ID}/services/${serviceId}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(values),
+        }
+      );
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.message || "Unable to update service availability.");
+      }
+      setServices((current) => current.map((service) => (
+        Number(service.serviceId) === Number(serviceId)
+          ? { ...service, ...result.data, dataUpdatedAt: result.data.updatedAt, source: "MANUAL", isVerified: false, confidence: "LOW", isUpdatedToday: true, ageMinutes: 0 }
+          : service
+      )));
+      setEditingService(null);
+      setNotification({ type: "success", message: "Service availability updated." });
+    } catch (err) {
+      setNotification({ type: "error", message: err.message || "Unable to update service availability." });
+    } finally {
+      setServiceSaving(false);
     }
   }
 
@@ -417,6 +479,14 @@ function HospitalDashboard() {
     (a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
   )[0];
 
+  const filteredServices = services.filter((service) => {
+    if (serviceFilter === "AVAILABLE") return service.isAvailable;
+    if (serviceFilter === "UNAVAILABLE") return !service.isAvailable;
+    if (serviceFilter === "NEEDS_UPDATE") return service.confidence === "LOW" || !service.isUpdatedToday;
+    return true;
+  });
+  const needsUpdateCount = services.filter((service) => service.confidence === "LOW" || !service.isUpdatedToday).length;
+
   /*
    * =======================================================
    * UI
@@ -424,9 +494,9 @@ function HospitalDashboard() {
    */
 
   return (
-    <main className="min-h-screen bg-slate-50 pt-28 pb-16">
+    <main className="sr-page min-h-screen pb-16 pt-8">
 
-      <div className="mx-auto max-w-7xl px-4 md:px-8">
+      <div className="sr-shell">
 
         {/* HEADER */}
 
@@ -438,7 +508,7 @@ function HospitalDashboard() {
               to="/"
               className="text-sm font-medium text-blue-600 hover:text-blue-700"
             >
-              ← SmartReferral
+              ← MedRoute
             </Link>
 
             <div className="mt-3 flex items-center gap-3">
@@ -450,7 +520,7 @@ function HospitalDashboard() {
               <div>
 
                 <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">
-                  Hospital Dashboard
+                  Hospital Command Center
                 </p>
 
                 <h1 className="text-3xl font-bold tracking-tight text-slate-900">
@@ -463,8 +533,7 @@ function HospitalDashboard() {
             </div>
 
             <p className="mt-3 text-sm text-slate-500">
-              Manage incoming referrals and
-              prepare for patient arrivals.
+              Coordinate incoming referrals, service availability, and patient arrivals from one live workspace.
             </p>
 
           </div>
@@ -593,6 +662,11 @@ function HospitalDashboard() {
 
         </div>
 
+        <section className="mt-8">
+          <div className="mb-4 flex items-end justify-between gap-4"><div><p className="sr-eyebrow">Live resources</p><h2 className="sr-title mt-1 text-2xl font-black">Capacity at a glance</h2></div><span className="sr-live">Operational view</span></div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{beds.slice(0, 4).map((bed) => <ResourceCard key={bed.id || bed.bedType} bed={bed} />)}{beds.length === 0 && <div className="sr-card p-5 text-sm text-[#6f8198]">No bed resources are configured for this hospital.</div>}</div>
+        </section>
+
         <section className="mt-8 rounded-3xl bg-white p-6 shadow-sm">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div>
@@ -604,6 +678,27 @@ function HospitalDashboard() {
           </div>
           {latestData && <div className="mt-5 grid gap-3 sm:grid-cols-3"><InfoItem label="Data source" value={latestData.source || "Unknown"} /><InfoItem label="Last updated" value={new Date(latestData.updatedAt).toLocaleString([], { dateStyle: "medium", timeStyle: "short" })} /><InfoItem label="Freshness" value={latestData.isUpdatedToday ? "Updated today" : "Data may be outdated"} /></div>}
           {latestData && latestData.confidence !== "VERY_HIGH" && <p className="mt-5 rounded-2xl bg-amber-50 p-4 text-sm font-semibold text-amber-800">⚠ Data freshness low. Please update availability to maintain higher confidence.</p>}
+        </section>
+
+        <section className="mt-8">
+          <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">Service availability</p>
+              <h2 className="mt-1 text-2xl font-bold text-slate-900">Available Services</h2>
+              <p className="mt-2 text-sm text-slate-500">Keep each registered service current for patients, doctors, and referrals.</p>
+            </div>
+            {needsUpdateCount > 0 && <span className="rounded-full bg-amber-50 px-4 py-2 text-xs font-bold text-amber-800">{needsUpdateCount} service{needsUpdateCount === 1 ? "" : "s"} need availability updates.</span>}
+          </div>
+          <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <ServiceStat label="Total Services" value={services.length} />
+            <ServiceStat label="Available" value={services.filter((service) => service.isAvailable).length} />
+            <ServiceStat label="Unavailable" value={services.filter((service) => !service.isAvailable).length} />
+            <ServiceStat label="Needs Update" value={needsUpdateCount} />
+          </div>
+          <div className="mt-5 flex flex-wrap gap-2">
+            {["ALL", "AVAILABLE", "UNAVAILABLE", "NEEDS_UPDATE"].map((filter) => <button key={filter} type="button" onClick={() => setServiceFilter(filter)} className={`rounded-full px-4 py-2 text-xs font-bold ${serviceFilter === filter ? "bg-blue-600 text-white" : "bg-white text-slate-600 shadow-sm"}`}>{filter === "NEEDS_UPDATE" ? "Needs Update" : filter[0] + filter.slice(1).toLowerCase()}</button>)}
+          </div>
+          {services.length === 0 ? <div className="mt-5 rounded-3xl bg-white p-8 text-center text-sm text-slate-500 shadow-sm">Loading services...</div> : <div className="mt-5 grid gap-4 md:grid-cols-2">{filteredServices.map((service) => <ServiceAvailabilityCard key={service.serviceId} service={service} onUpdate={() => setEditingService(service)} />)}</div>}
         </section>
 
         {/* REFERRALS */}
@@ -686,6 +781,8 @@ function HospitalDashboard() {
 
       </div>
 
+      {editingService && <ServiceUpdateModal service={editingService} saving={serviceSaving} onClose={() => !serviceSaving && setEditingService(null)} onSave={saveService} />}
+
     </main>
   );
 }
@@ -722,6 +819,39 @@ function StatCard({
 
     </div>
   );
+}
+
+function ServiceStat({ label, value }) {
+  return <div className="rounded-2xl bg-white p-4 shadow-sm"><p className="text-2xl font-bold text-slate-900">{value}</p><p className="mt-1 text-xs font-semibold text-slate-500">{label}</p></div>;
+}
+
+function ResourceCard({ bed }) {
+  const available = Number(bed.availableBeds || 0);
+  const total = Number(bed.totalBeds || 0);
+  const hasCapacity = available > 0;
+  return <article className="sr-card p-5"><div className="flex items-start justify-between gap-3"><span className="sr-service-icon">▤</span><span className={`rounded-full px-3 py-1 text-[10px] font-black ${hasCapacity ? "bg-[#e7f8f1] text-[#14845c]" : "bg-[#fff5df] text-[#a96808]"}`}>{hasCapacity ? "Available" : "At capacity"}</span></div><h3 className="mt-4 text-sm font-black capitalize text-[#0c2c59]">{bed.bedType} beds</h3><p className="mt-2 text-2xl font-black text-[#1769e0]">{available} <span className="text-sm font-bold text-[#8aa0b7]">/ {total}</span></p><p className="mt-2 text-xs text-[#6f8198]">Updated {bed.updatedAt ? new Date(bed.updatedAt).toLocaleDateString() : "not recorded"}</p></article>;
+}
+
+function ServiceAvailabilityCard({ service, onUpdate }) {
+  const stale = service.confidence === "LOW" || !service.isUpdatedToday;
+  return <article className="rounded-3xl bg-white p-6 shadow-sm"><div className="flex items-start justify-between gap-4"><div><h3 className="text-lg font-bold text-slate-900">{service.serviceName}</h3><p className="mt-1 text-sm text-slate-500">{service.description || "Registered hospital service"}</p></div><span className={`rounded-full px-3 py-1 text-xs font-bold ${service.isAvailable ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"}`}>{service.isAvailable ? "● Available" : "● Unavailable"}</span></div><div className="mt-5 grid grid-cols-2 gap-4"><InfoItem label="Capacity" value={service.capacity ?? "Not listed"} /><InfoItem label="Data source" value={service.source || "Not recorded"} /><InfoItem label="Last updated" value={formatServiceAge(service)} /><InfoItem label="Confidence" value={String(service.confidence || "LOW").replaceAll("_", " ")} /></div>{stale && <p className="mt-5 rounded-2xl bg-amber-50 p-3 text-xs font-semibold text-amber-800">⚠ Availability may be outdated</p>}<div className="mt-5 flex items-center justify-between gap-3"><span className="text-xs text-slate-400">{service.isVerified ? "Verified" : "Not verified"}</span><button type="button" onClick={onUpdate} className="rounded-2xl bg-blue-600 px-4 py-2.5 text-sm font-bold text-white hover:bg-blue-700">Update</button></div></article>;
+}
+
+function ServiceUpdateModal({ service, saving, onClose, onSave }) {
+  const [isAvailable, setIsAvailable] = useState(Boolean(service.isAvailable));
+  const [capacity, setCapacity] = useState(service.capacity ?? 0);
+  const [notes, setNotes] = useState(service.notes || "");
+  return <div className="fixed inset-0 z-50 overflow-y-auto bg-slate-900/50 p-4" role="dialog" aria-modal="true"><div className="mx-auto mt-10 max-w-lg rounded-3xl bg-white p-6 shadow-2xl md:p-8"><div className="flex items-start justify-between gap-4"><div><p className="text-xs font-bold uppercase tracking-widest text-blue-600">Service availability</p><h2 className="mt-2 text-2xl font-bold text-slate-900">Update Service Availability</h2><p className="mt-1 text-sm text-slate-500">{service.serviceName}</p></div><button type="button" onClick={onClose} className="text-2xl text-slate-400" aria-label="Close">×</button></div><fieldset className="mt-7"><legend className="text-sm font-bold text-slate-700">Availability</legend><div className="mt-3 flex gap-5"><label className="flex items-center gap-2 text-sm font-semibold text-slate-700"><input type="radio" checked={isAvailable} onChange={() => setIsAvailable(true)} /> Available</label><label className="flex items-center gap-2 text-sm font-semibold text-slate-700"><input type="radio" checked={!isAvailable} onChange={() => setIsAvailable(false)} /> Unavailable</label></div></fieldset><label className="mt-6 block text-sm font-bold text-slate-700">Capacity<input type="number" min="0" value={capacity} onChange={(event) => setCapacity(event.target.value)} className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 outline-none focus:border-blue-500" /></label><label className="mt-6 block text-sm font-bold text-slate-700">Notes<textarea value={notes} onChange={(event) => setNotes(event.target.value)} rows="3" className="mt-2 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 font-normal outline-none focus:border-blue-500" /></label><p className="mt-5 text-xs text-slate-500">Data source: MANUAL. Saving creates a new verification record for this availability update.</p><div className="mt-7 flex justify-end gap-3"><button type="button" disabled={saving} onClick={onClose} className="rounded-2xl border border-slate-200 px-5 py-3 text-sm font-bold text-slate-600">Cancel</button><button type="button" disabled={saving || capacity === "" || Number(capacity) < 0} onClick={() => onSave(service.serviceId, { isAvailable, capacity: Number(capacity), notes })} className="rounded-2xl bg-blue-600 px-5 py-3 text-sm font-bold text-white disabled:opacity-50">{saving ? "Saving..." : "Save Update"}</button></div></div></div>;
+}
+
+function formatServiceAge(service) {
+  if (!service.updatedAt) return "Not updated";
+  const age = Number(service.ageMinutes);
+  if (Number.isFinite(age) && age < 1) return "Updated just now";
+  if (Number.isFinite(age) && age < 60) return `Updated ${Math.round(age)} minutes ago`;
+  if (service.isUpdatedToday) return "Updated today";
+  if (Number.isFinite(age) && age < 48 * 60) return "Updated yesterday";
+  return `Updated ${Math.max(2, Math.round(age / (24 * 60)))} days ago`;
 }
 
 /*
@@ -1028,3 +1158,4 @@ function formatStatus(
 }
 
 export default HospitalDashboard;
+

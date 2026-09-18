@@ -27,6 +27,9 @@ function buildInstantEligibility({
   freshness,
   dataVerified,
   dataUpdatedAt,
+  serviceFreshness,
+  serviceDataVerified,
+  serviceDataUpdatedAt,
   score,
   now = new Date(),
 }) {
@@ -44,27 +47,29 @@ function buildInstantEligibility({
       service?.capacity === undefined ||
       service.capacity > 0);
 
-  const serviceUpdatedToday = isSameCalendarDay(
-    service?.updatedAt,
-    now
-  );
-
   const bedsUpdatedToday =
     (beds || []).length > 0 &&
     beds.every((bed) => isSameCalendarDay(bed.updatedAt, now));
 
   const dataUpdatedToday =
     isSameCalendarDay(dataUpdatedAt, now) &&
-    serviceUpdatedToday &&
     bedsUpdatedToday;
+
+  const serviceDataUpdatedToday = isSameCalendarDay(
+    serviceDataUpdatedAt,
+    now
+  );
 
   const veryHighConfidence =
     hospital?.isActive === true &&
     serviceAvailable &&
     capacityAvailable &&
     dataUpdatedToday &&
+    serviceDataUpdatedToday &&
     dataVerified === true &&
+    serviceDataVerified === true &&
     freshness?.confidence === "HIGH" &&
+    serviceFreshness?.confidence === "HIGH" &&
     Number(score?.totalScore || 0) >= 80;
 
   let reason = "Instant referral is not currently available.";
@@ -77,6 +82,8 @@ function buildInstantEligibility({
     reason = "No current capacity is available.";
   } else if (!dataUpdatedToday) {
     reason = "Hospital availability data was not updated today.";
+  } else if (!serviceDataUpdatedToday || serviceFreshness?.confidence !== "HIGH" || !serviceDataVerified) {
+    reason = "Required service availability could not be confidently verified.";
   } else if (!dataVerified || freshness?.confidence !== "HIGH") {
     reason = "Hospital availability could not be confidently verified.";
   } else if (Number(score?.totalScore || 0) < 80) {
@@ -183,11 +190,35 @@ export async function findEligibleHospitals({
       )
       .all();
 
+    const serviceDataUpdates = await db.orm.public.HospitalDataUpdate
+      .where({
+        hospitalId: hospital.id,
+        dataType: "SERVICE_AVAILABILITY",
+      })
+      .select(
+        "id",
+        "source",
+        "dataType",
+        "updatedAt",
+        "isVerified"
+      )
+      .all();
+
+    const serviceDataUpdate = serviceDataUpdates.sort(
+      (a, b) =>
+        new Date(String(b.updatedAt)).getTime() -
+        new Date(String(a.updatedAt)).getTime()
+    )[0] || null;
+
     let freshness = null;
 
     if (dataUpdate) {
       freshness = calculateFreshness(dataUpdate.updatedAt);
     }
+
+    const serviceFreshness = calculateFreshness(
+      serviceDataUpdate?.updatedAt || hospitalService.updatedAt
+    );
 
    const recommendationData = {
   hospital,
@@ -196,6 +227,10 @@ export async function findEligibleHospitals({
   freshness,
   dataSource: dataUpdate?.source ?? null,
   dataVerified: dataUpdate?.isVerified ?? false,
+  serviceFreshness,
+  serviceDataSource: serviceDataUpdate?.source ?? null,
+  serviceDataVerified: serviceDataUpdate?.isVerified ?? false,
+  serviceDataUpdatedAt: serviceDataUpdate?.updatedAt ?? hospitalService.updatedAt,
   beds,
   dataUpdatedAt: dataUpdate?.updatedAt ?? null,
 };

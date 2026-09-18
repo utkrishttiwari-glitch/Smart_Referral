@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+﻿import { Link, useNavigate } from "react-router-dom";
 
 const roles = [
   { id: "patient", title: "Patient", description: "Find care, talk with a doctor, and access your medical reports." },
@@ -14,11 +14,11 @@ function Login() {
   return (
     <main className="min-h-screen bg-[#eaf4ff] px-5 py-10 md:px-8">
       <div className="mx-auto max-w-5xl">
-        <Link to="/" className="font-bold text-blue-700">SmartReferral</Link>
+        <Link to="/" className="font-bold text-blue-700">MedRoute</Link>
         <div className="mx-auto mt-16 max-w-3xl text-center">
           <p className="text-sm font-bold uppercase tracking-[0.2em] text-blue-600">Demo access</p>
           <h1 className="mt-3 text-4xl font-extrabold tracking-tight text-slate-900">Choose your portal</h1>
-          <p className="mt-4 text-slate-500">Select a role to explore the SmartReferral experience.</p>
+          <p className="mt-4 text-slate-500">Select a role to explore the MedRoute experience.</p>
         </div>
         <div className="mt-10 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
           {roles.map((role) => (
@@ -36,3 +36,4 @@ function Login() {
 }
 
 export default Login;
+

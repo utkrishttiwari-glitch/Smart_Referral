@@ -1,4 +1,4 @@
-import express from "express";
+﻿import express from "express";
 import cors from "cors";
 import hospitalRoutes from "./src/routes/hospitalRoutes.js";
 import serviceRoutes from "./src/routes/serviceRoutes.js";
@@ -16,18 +16,28 @@ import { Server } from "socket.io";
 
 const app = express();
 const PORT = 5000;
-app.use(
-  cors({
-    origin: "http://localhost:5173",
-  })
-);
+const allowedOrigins = [
+  "http://localhost:5173",
+  "http://localhost:5174",
+];
+
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS blocked origin: ${origin}`));
+    }
+  },
+  credentials: true,
+}));
 
 app.use(express.json());
 app.use(express.static("public"));
 
 app.get("/", (req, res) => {
   res.json({
-    message: "Smart Referral System API is running",
+    message: "MedRoute API is running",
   });
 });
 
@@ -45,7 +55,9 @@ const httpServer = http.createServer(app);
 
 const io = new Server(httpServer, {
   cors: {
-    origin: "*",
+    origin: allowedOrigins,
+    methods: ["GET", "POST", "PATCH", "PUT", "DELETE", "OPTIONS"],
+    credentials: true,
   },
 });
 

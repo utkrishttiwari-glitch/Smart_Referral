@@ -1,26 +1,17 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import PortalNav from "../components/PortalNav";
 
 function PatientDashboard() {
-  return (
-    <div className="min-h-screen bg-slate-50">
-      <PortalNav role="patient" />
-      <main className="mx-auto max-w-7xl px-5 py-10 md:px-8">
-        <div className="max-w-2xl">
-          <p className="text-sm font-bold uppercase tracking-[0.2em] text-blue-600">Patient care portal</p>
-          <h1 className="mt-3 text-4xl font-extrabold tracking-tight text-slate-900">How can SmartReferral help you today?</h1>
-          <p className="mt-4 text-slate-500">Find the right care, speak with a doctor, and keep your medical information close at hand.</p>
-        </div>
-
-        <section className="mt-10 grid gap-6 lg:grid-cols-[1.4fr_0.8fr]">
-          <div className="rounded-3xl bg-white p-8 shadow-sm"><p className="text-sm font-bold uppercase tracking-widest text-blue-600">Hospital recommendation</p><h2 className="mt-3 text-3xl font-bold text-slate-900">Find the right hospital</h2><p className="mt-3 max-w-xl leading-7 text-slate-500">Tell us what care you need and SmartReferral will recommend suitable hospitals based on service availability, capacity, distance, and current data.</p><Link to="/patient/hospitals" className="mt-7 inline-flex rounded-full bg-blue-600 px-6 py-3 text-sm font-bold text-white hover:bg-blue-700">Find a Hospital</Link></div>
-          <div className="rounded-3xl bg-blue-700 p-8 text-white shadow-sm"><p className="text-sm font-bold uppercase tracking-widest text-blue-100">Live teleconsultation</p><h2 className="mt-3 text-2xl font-bold">Connect with a doctor remotely.</h2><Link to="/patient/teleconsultation" className="mt-7 inline-flex rounded-full bg-white px-5 py-3 text-sm font-bold text-blue-700">Start Consultation</Link></div>
-        </section>
-
-        <section className="mt-8 rounded-3xl bg-white p-8 shadow-sm"><div className="flex flex-wrap items-center justify-between gap-3"><div><p className="text-sm font-bold uppercase tracking-widest text-slate-400">My medical reports</p><h2 className="mt-2 text-2xl font-bold text-slate-900">Your records, ready when you need them.</h2></div><Link to="/patient/reports" className="text-sm font-bold text-blue-600">View All Reports</Link></div><p className="mt-4 text-sm text-slate-500">Connect your medical reports to keep consultations and hospital visits informed.</p></section>
-      </main>
-    </div>
-  );
+  const [services, setServices] = useState([]);
+  const [loading, setLoading] = useState(true);
+  useEffect(() => { fetch("http://localhost:5000/api/services").then((response) => response.json()).then((result) => setServices(result.data || [])).catch(() => setServices([])).finally(() => setLoading(false)); }, []);
+  return <div className="sr-page"><PortalNav role="patient" /><main className="sr-shell py-7 md:py-12">
+    <section className="grid gap-5 lg:grid-cols-[1.2fr_.8fr]"><div className="sr-card sr-grid-glow p-7 md:p-9"><p className="sr-eyebrow">Patient home</p><h1 className="sr-title mt-3 text-4xl font-black md:text-5xl">Find the right care.</h1><p className="mt-4 max-w-xl text-base leading-7 text-[#6f8198]">Choose a service and MedRoute will compare live hospital availability, capacity, distance and freshness.</p><div className="mt-7 flex flex-wrap gap-3"><Link to="/patient/hospitals" className="sr-btn-primary">Find a hospital <span>↗</span></Link><Link to="/patient/teleconsultation" className="sr-btn-secondary">Talk to a doctor</Link></div></div><div className="sr-illustration min-h-56 p-6"><div className="relative z-10 flex h-full flex-col justify-between"><span className="sr-mini-icon bg-white">⌖</span><div><p className="sr-eyebrow">Your care journey</p><h2 className="mt-2 text-2xl font-black text-[#0c2c59]">Choose. Compare. Connect.</h2><p className="mt-2 text-sm leading-6 text-[#54708e]">Uncertainty is always visible.</p></div></div></div></section>
+    <section className="mt-8"><div className="flex items-end justify-between gap-3"><div><p className="sr-eyebrow">Services</p><h2 className="sr-title mt-2 text-2xl font-black">What kind of care do you need?</h2></div><Link to="/patient/hospitals" className="text-sm font-black text-[#1769e0]">View all →</Link></div><div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">{loading ? [1,2,3].map((item) => <div key={item} className="h-44 animate-pulse rounded-[24px] bg-white" />) : services.map((service, index) => <ServiceCard key={service.id} service={service} index={index} />)}</div></section>
+    <section className="mt-8 grid gap-5 md:grid-cols-3"><QuickLink icon="⌖" title="Find a hospital" text="Current service and confidence signals." path="/patient/hospitals" /><QuickLink icon="◉" title="Teleconsultation" text="Request a verified specialist." path="/patient/teleconsultation" /><QuickLink icon="▤" title="Medical reports" text="Keep your care documents ready." path="/patient/reports" /></section>
+  </main></div>;
 }
-
+function ServiceCard({ service, index }) { const name = String(service.name || "").toLowerCase(); const icon = name.includes("trauma") ? "✦" : name.includes("card") ? "♡" : "✚"; return <Link to={`/patient/hospitals?service=${service.id}`} className="sr-card group p-5 transition hover:-translate-y-1 hover:border-[#8ebce8]"><div className="flex items-center justify-between"><span className="sr-service-icon">{icon}</span><span className="text-xs font-black text-[#9bb0c5]">0{index + 1}</span></div><h3 className="mt-5 text-lg font-black text-[#0c2c59]">{service.name}</h3><p className="mt-2 line-clamp-2 text-sm leading-6 text-[#6f8198]">{service.description || "Care matched to current hospital availability."}</p><span className="mt-4 inline-block text-xs font-black text-[#1769e0]">Select service →</span></Link>; }
+function QuickLink({ icon, title, text, path }) { return <Link to={path} className="sr-card flex items-start gap-4 p-5 transition hover:-translate-y-1 hover:border-[#8ebce8]"><span className="sr-mini-icon shrink-0">{icon}</span><span><strong className="block text-sm font-black text-[#0c2c59]">{title}</strong><small className="mt-1 block text-xs leading-5 text-[#6f8198]">{text}</small></span></Link>; }
 export default PatientDashboard;

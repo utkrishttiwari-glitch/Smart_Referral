@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+﻿import { Link, useLocation } from "react-router-dom";
 
 const navigation = {
   patient: [
@@ -32,42 +32,22 @@ function PortalNav({ role }) {
   const location = useLocation();
   const links = navigation[role] || navigation.patient;
   const label = role === "patient" ? "Patient Portal" : `${role[0].toUpperCase()}${role.slice(1)} Portal`;
+  const roleInitial = role === "hospital" ? "MG" : role === "doctor" ? "DR" : role === "medical" ? "RK" : role === "medicine" ? "MP" : "PS";
+  const icons = { Dashboard: "⌂", "Find Hospital": "⌖", "Live Teleconsultation": "◉", "My Medical Reports": "▤", "Medicine Availability": "✦", "New Referral": "＋", "Instant Referral": "!", Referrals: "↗", Hospitals: "🏥", Tracking: "⌁", Consultations: "◌", "Incoming Referrals": "▤", "Active Transfers": "🚑", "Beds & Services": "▦", Verification: "✓", Profile: "◎", "Doctor Consultation": "◉" };
 
   return (
-    <header className="border-b border-slate-200 bg-white">
-      <div className="mx-auto flex max-w-7xl flex-wrap items-center justify-between gap-4 px-5 py-4 md:px-8">
-        <Link to="/" className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-full bg-blue-600 text-lg font-bold text-white">+</span>
-          <span>
-            <strong className="block text-lg tracking-tight text-blue-900">SmartReferral</strong>
-            <small className="block text-[10px] font-semibold uppercase tracking-widest text-slate-400">{label}</small>
-          </span>
+    <header className="sr-portal-header sticky top-0 z-40 border-b border-[#dce8f4] bg-white/95 backdrop-blur">
+      <div className="sr-portal-top mx-auto flex max-w-[1440px] items-center justify-between gap-5 px-4 py-3 md:px-8">
+        <Link to="/" className="flex min-w-0 items-center gap-3">
+          <span className="sr-portal-logo">+</span>
+          <span className="min-w-0"><strong className="block truncate text-base font-extrabold tracking-tight text-[#0c2c59]">MedRoute</strong><small className="block truncate text-[10px] font-bold uppercase tracking-[.15em] text-slate-400">{label} · Connecting Care. Saving Lives.</small></span>
         </Link>
-
-        <nav className="flex max-w-full flex-wrap items-center gap-2 md:gap-5">
-          {links.map(([text, path]) => (
-            <Link
-              key={path}
-              to={path}
-              className={`rounded-full px-3 py-2 text-sm font-semibold transition ${location.pathname === path ? "bg-blue-50 text-blue-700" : "text-slate-500 hover:text-blue-600"}`}
-            >
-              {text}
-            </Link>
-          ))}
-          {role === "patient" && (
-            <Link to="/patient/hospitals" className="rounded-full bg-blue-600 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-blue-700">
-              Find a Hospital
-            </Link>
-          )}
-          {role === "doctor" && (
-            <Link to="/doctor/referral" className="rounded-full bg-blue-600 px-4 py-2 text-sm font-bold text-white shadow-sm hover:bg-blue-700">
-              New Referral
-            </Link>
-          )}
-        </nav>
+        <div className="flex items-center gap-2"><span className="sr-live hidden sm:inline-flex">Live network</span><span className="sr-portal-language hidden md:inline-flex">◎ English⌄</span>{role === "patient" && <Link to="/patient/hospitals" className="sr-btn-primary">Find a hospital <span aria-hidden="true">↗</span></Link>}{role === "doctor" && <Link to="/doctor/referral" className="sr-btn-primary">New referral <span aria-hidden="true">+</span></Link>}<span className="sr-portal-avatar">{roleInitial}</span></div>
       </div>
+      <nav className="sr-portal-nav mx-auto flex max-w-[1440px] gap-1 overflow-x-auto border-t border-slate-100 px-4 py-2 md:px-8">{links.map(([text, path]) => <Link key={path} to={path} className={`sr-portal-link whitespace-nowrap rounded-xl px-3 py-2 text-xs font-extrabold ${location.pathname === path ? "active" : ""}`}><span aria-hidden="true">{icons[text] || "•"}</span>{text}</Link>)}</nav>
     </header>
   );
 }
 
 export default PortalNav;
+

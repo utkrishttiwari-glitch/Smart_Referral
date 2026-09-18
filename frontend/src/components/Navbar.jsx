@@ -1,4 +1,4 @@
-import { useState } from "react";
+﻿import { useState } from "react";
 import { Link } from "react-router-dom";
 
 function Navbar() {
@@ -16,7 +16,7 @@ function Navbar() {
 
           <div>
             <h1 className="text-lg font-bold tracking-tight text-blue-900">
-              SmartReferral
+              MedRoute
             </h1>
             <p className="text-[10px] font-medium uppercase tracking-widest text-slate-400">
               Emergency Care Network
@@ -60,7 +60,7 @@ function Navbar() {
             to="/select-interface"
             className="rounded-full bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-blue-200 transition hover:bg-blue-700"
           >
-            Start SmartReferral
+            Start MedRoute
           </Link>
           <button type="button" onClick={() => setOpen((value) => !value)} className="ml-1 flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 text-slate-600 md:hidden" aria-label="Toggle navigation">{open ? "×" : "☰"}</button>
           </div>

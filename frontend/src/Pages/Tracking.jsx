@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+﻿import { useEffect, useRef, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { io } from "socket.io-client";
 import * as maplibregl from "maplibre-gl";
@@ -180,7 +180,7 @@ function Tracking() {
           "Failed to fetch latest location:",
           err
         );
-        setLocationError("Unable to connect to SmartReferral.");
+        setLocationError("Unable to connect to MedRoute.");
       }
     }
 
@@ -1035,9 +1035,9 @@ function Tracking() {
               : "En route to destination";
 
   return (
-    <main className="min-h-screen bg-slate-50 pt-28 pb-16">
+    <main className="sr-page min-h-screen pb-16 pt-8">
 
-      <div className="mx-auto max-w-7xl px-4 md:px-8">
+      <div className="sr-shell">
 
         {/* HEADER */}
 
@@ -1049,13 +1049,13 @@ function Tracking() {
               to="/"
               className="text-sm font-medium text-blue-600 transition hover:text-blue-700"
             >
-              ← Back to SmartReferral
+              ← Back to MedRoute
             </Link>
 
             <div className="mt-3 flex flex-wrap items-center gap-3">
 
               <h1 className="text-3xl font-bold tracking-tight text-slate-900">
-                Track Referral
+                MedRoute Live Tracking
               </h1>
 
               <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-bold uppercase tracking-wide text-blue-700">
@@ -1105,7 +1105,7 @@ function Tracking() {
 
           {/* MAP SECTION */}
 
-          <section className="overflow-hidden rounded-3xl bg-white shadow-sm">
+          <section className="sr-card overflow-hidden">
 
             <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
 
@@ -2475,3 +2475,4 @@ function JourneyStep({
 }
 
 export default Tracking;
+

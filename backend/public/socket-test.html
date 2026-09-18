@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -11,7 +11,7 @@
   >
 
   <title>
-    Smart Referral - Live Ambulance & Hospital Updates
+    MedRoute - Live Ambulance & Hospital Updates
   </title>
 
 
@@ -700,7 +700,7 @@
   <div class="card">
 
     <h1>
-      Smart Referral System
+      MedRoute System
     </h1>
 
     <p>
@@ -758,7 +758,7 @@
 
 
       <div class="live-badge">
-        ● LIVE
+        â— LIVE
       </div>
 
     </div>
@@ -870,7 +870,7 @@
       </div>
 
       <div class="live-badge">
-        ● LIVE
+        â— LIVE
       </div>
 
     </div>
@@ -880,7 +880,7 @@
       <div class="bed-top">
 
         <div class="bed-name">
-          🛏️ Emergency Beds
+          ðŸ›ï¸ Emergency Beds
         </div>
 
       </div>
@@ -916,17 +916,17 @@
       </div>
 
       <div id="confirmationBadge" class="live-badge">
-        ● VERIFICATION NEEDED
+        â— VERIFICATION NEEDED
       </div>
     </div>
 
     <div id="confirmationCard" class="confirmation-card">
       <div id="confirmationStatus" class="confirmation-status">
-        ⚠️ Bed availability may need confirmation from the hospital.
+        âš ï¸ Bed availability may need confirmation from the hospital.
       </div>
 
       <button id="confirmHospitalBtn" class="confirmation-button">
-        📞 Call Hospital to Confirm
+        ðŸ“ž Call Hospital to Confirm
       </button>
     </div>
   </div>
@@ -1139,7 +1139,7 @@ Waiting for hospital bed update...
 
         <div class="hospital-marker">
 
-          🏥
+          ðŸ¥
 
         </div>
 
@@ -1436,7 +1436,7 @@ Waiting for hospital bed update...
 
   confirmHospitalBtn.addEventListener("click", async () => {
     confirmHospitalBtn.disabled = true;
-    confirmHospitalBtn.textContent = "📞 Calling hospital...";
+    confirmHospitalBtn.textContent = "ðŸ“ž Calling hospital...";
 
     confirmationStatus.textContent =
       "Calling Metro General Hospital for bed availability confirmation...";
@@ -1466,16 +1466,16 @@ Waiting for hospital bed update...
       const confirmation = result.data || {};
 
       confirmationCard.classList.add("confirmation-success");
-      confirmationBadge.textContent = "● VERIFIED";
+      confirmationBadge.textContent = "â— VERIFIED";
 
       confirmationStatus.innerHTML =
-        `✓ Hospital confirmed bed availability.<br>
+        `âœ“ Hospital confirmed bed availability.<br>
          Source: Manual Call<br>
          Verified: ${new Date(
            confirmation.updatedAt || Date.now()
          ).toLocaleTimeString()}`;
 
-      confirmHospitalBtn.textContent = "✓ Hospital Confirmed";
+      confirmHospitalBtn.textContent = "âœ“ Hospital Confirmed";
 
       console.log(
         "Hospital data confirmation:",
@@ -1488,11 +1488,11 @@ Waiting for hospital bed update...
       );
 
       confirmationStatus.textContent =
-        "❌ Unable to confirm hospital data. Please try again.";
+        "âŒ Unable to confirm hospital data. Please try again.";
 
       confirmHospitalBtn.disabled = false;
       confirmHospitalBtn.textContent =
-        "📞 Call Hospital to Confirm";
+        "ðŸ“ž Call Hospital to Confirm";
     }
   });
 
@@ -1804,7 +1804,7 @@ Waiting for hospital bed update...
 
       serviceUpdateStatusElement.textContent =
 
-        "● Updated live just now";
+        "â— Updated live just now";
 
 
       // ====================================================
@@ -1923,16 +1923,16 @@ Waiting for hospital bed update...
       }
 
       confirmationCard.classList.add("confirmation-success");
-      confirmationBadge.textContent = "● VERIFIED";
+      confirmationBadge.textContent = "â— VERIFIED";
 
       confirmationStatus.innerHTML =
-        `✓ Hospital confirmed bed availability.<br>
+        `âœ“ Hospital confirmed bed availability.<br>
          Source: ${data.source || "MANUAL_CALL"}<br>
          Verified: ${new Date(
            data.updatedAt || Date.now()
          ).toLocaleTimeString()}`;
 
-      confirmHospitalBtn.textContent = "✓ Hospital Confirmed";
+      confirmHospitalBtn.textContent = "âœ“ Hospital Confirmed";
       confirmHospitalBtn.disabled = true;
     }
   );
@@ -2321,3 +2321,4 @@ Waiting for hospital bed update...
 </body>
 
 </html>
+
