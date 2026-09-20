@@ -1,5 +1,6 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
+import { User, Stethoscope, Building2, Users, Pill } from "lucide-react";
 
 const translations = {
   en: { welcome: "Welcome to MedRoute", heading: "Choose Your Interface", subheading: "Choose how you want to connect with healthcare.", back: "Back to MedRoute", network: "Connected healthcare network", enter: "Enter", roles: { patient: "Patient", doctor: "Doctor", hospital: "Hospital", staff: "Medical Staff", medicine: "Medicine Provider" } },

@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import Navbar from "../components/Navbar";
-import Footer from "../components/Footer";
+import ArrowFillButton from "../components/ui/ArrowFillButton";
 
 const workflow = [
   ["01", "FIND", "⌖", "A hospital with the care you need."],
@@ -15,7 +15,7 @@ function Home() {
   useEffect(() => { fetch(import.meta.env.VITE_API_URL + "/api/services").then((response) => response.json()).then((result) => setServices(result.data || [])).catch(() => setServices([])); }, []);
 
   return <div className="sr-page min-h-screen overflow-hidden"><Navbar /><main>
-    <section className="sr-hero mx-auto max-w-7xl px-5 pb-16 pt-32 md:px-8 md:pt-40"><div className="grid items-center gap-12 lg:grid-cols-[.9fr_1.1fr]">
+    <section id="home" className="grid items-center gap-12 lg:grid-cols-[.9fr_1.1fr] scroll-mt-20">
       <div><p className="sr-eyebrow">Emergency care coordination</p><h1 className="sr-title mt-4 max-w-xl text-5xl font-black leading-[.98] md:text-7xl">Connecting care.<br /><span className="text-[#1769e0]">Saving lives.</span></h1><p className="mt-6 max-w-lg text-lg leading-8 text-[#60758a]">One connected platform for hospital discovery, intelligent referrals, emergency coordination and live patient tracking.</p><p className="mt-4 text-sm font-extrabold text-[#34516f]">Right Patient. Right Hospital. Right Time.</p><div className="mt-8 flex flex-wrap gap-3"><Link to="/select-interface" className="sr-btn-primary rounded-full px-6 py-4">Start MedRoute <span>↗</span></Link><Link to="/login" className="sr-btn-secondary rounded-full px-6 py-4">Login</Link></div><div className="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-xs font-extrabold text-[#6f8198]"><span className="text-[#14845c]">✓ Live hospital signals</span><span className="text-[#14845c]">✓ Explainable matching</span><span className="text-[#14845c]">✓ Connected handover</span></div></div>
       <NetworkHero />
     </div></section>
