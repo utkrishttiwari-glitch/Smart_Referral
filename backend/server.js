@@ -1,4 +1,4 @@
-﻿import express from "express";
+import express from "express";
 import cors from "cors";
 import hospitalRoutes from "./src/routes/hospitalRoutes.js";
 import serviceRoutes from "./src/routes/serviceRoutes.js";
@@ -19,6 +19,7 @@ const PORT = 5000;
 const allowedOrigins = [
   "http://localhost:5173",
   "http://localhost:5174",
+  "https://smart-referral.vercel.app",
 ];
 
 app.use(cors({
