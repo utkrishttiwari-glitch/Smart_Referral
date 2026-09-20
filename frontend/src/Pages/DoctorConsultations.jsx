@@ -1,8 +1,9 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { io } from "socket.io-client";
 import PortalNav from "../components/PortalNav";
 
-const API = "http://localhost:5000/api/coordination";
+import API_URL from "../config/api";
+const API = `${API_URL}/api/coordination`;
 
 function DoctorConsultations() {
   const [consultations, setConsultations] = useState([]);
@@ -18,7 +19,7 @@ function DoctorConsultations() {
 
   useEffect(() => {
     loadConsultations();
-    const socket = io("http://localhost:5000");
+    const socket = io(import.meta.env.VITE_API_URL + "");
     socket.on("consultation-status-updated", loadConsultations);
     socket.on("consultation-message", loadConsultations);
     return () => socket.disconnect();

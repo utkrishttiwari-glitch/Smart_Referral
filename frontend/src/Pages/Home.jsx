@@ -12,7 +12,7 @@ const workflow = [
 
 function Home() {
   const [services, setServices] = useState([]);
-  useEffect(() => { fetch("http://localhost:5000/api/services").then((response) => response.json()).then((result) => setServices(result.data || [])).catch(() => setServices([])); }, []);
+  useEffect(() => { fetch(import.meta.env.VITE_API_URL + "/api/services").then((response) => response.json()).then((result) => setServices(result.data || [])).catch(() => setServices([])); }, []);
 
   return <div className="sr-page min-h-screen overflow-hidden"><Navbar /><main>
     <section className="sr-hero mx-auto max-w-7xl px-5 pb-16 pt-32 md:px-8 md:pt-40"><div className="grid items-center gap-12 lg:grid-cols-[.9fr_1.1fr]">

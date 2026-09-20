@@ -1,7 +1,7 @@
 ﻿import { useEffect, useState } from "react";
 import PortalNav from "../components/PortalNav";
 
-const API = "http://localhost:5000/api/coordination";
+const API = import.meta.env.VITE_API_URL + "/api/coordination";
 const statusOptions = ["AVAILABLE", "LOW_STOCK", "OUT_OF_STOCK"];
 
 function MedicineProvider() {

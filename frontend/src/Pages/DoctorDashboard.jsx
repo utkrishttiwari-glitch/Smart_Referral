@@ -1,8 +1,8 @@
-﻿import { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import PortalNav from "../components/PortalNav";
 
-const API_BASE_URL = "http://localhost:5000";
+import API_URL from "../config/api";
 
 function DoctorDashboard() {
   const [referrals, setReferrals] = useState([]);

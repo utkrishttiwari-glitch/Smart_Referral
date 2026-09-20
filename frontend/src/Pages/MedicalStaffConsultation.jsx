@@ -2,14 +2,14 @@
 import { io } from "socket.io-client";
 import PortalNav from "../components/PortalNav";
 
-const API = "http://localhost:5000/api/coordination";
+const API = import.meta.env.VITE_API_URL + "/api/coordination";
 function MedicalStaffConsultation() {
   const [doctors, setDoctors] = useState([]);
   const [consultation, setConsultation] = useState(null);
   const [messages, setMessages] = useState([]);
   const [notice, setNotice] = useState("");
   const staff = { name: "Raj Kumar", role: "Paramedic", ambulanceNumber: "AMB-101", referralId: 12, patientName: "Assigned patient" };
-  useEffect(() => { fetch(`${API}/doctors`).then((response) => response.json()).then((result) => setDoctors(result.data || [])); const socket = io("http://localhost:5000"); socket.on("consultation-status-updated", setConsultation); socket.on("consultation-message", (message) => { setMessages((current) => current.some((item) => item.id === message.id) ? current : [...current, message]); }); return () => socket.disconnect(); }, []);
+  useEffect(() => { fetch(`${API}/doctors`).then((response) => response.json()).then((result) => setDoctors(result.data || [])); const socket = io(import.meta.env.VITE_API_URL + ""); socket.on("consultation-status-updated", setConsultation); socket.on("consultation-message", (message) => { setMessages((current) => current.some((item) => item.id === message.id) ? current : [...current, message]); }); return () => socket.disconnect(); }, []);
   async function startConsultation(doctorId) { const response = await fetch(`${API}/consultations`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ patientName: staff.patientName, doctorId, medicalStaffId: 1, referralId: staff.referralId, context: `Ambulance ${staff.ambulanceNumber} en route` }) }); const result = await response.json(); if (result.success) { setConsultation(result.data); await loadMessages(result.data.id); setNotice("Prototype consultation requested. No video call has been placed."); } }
   async function loadMessages(consultationId) { const response = await fetch(`${API}/consultations/${consultationId}/messages`); const result = await response.json(); if (result.success) setMessages(result.data || []); }
   async function sendInstruction(messageType, content) { if (!consultation) return; await fetch(`${API}/consultations/${consultation.id}/messages`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ senderRole: "MEDICAL_STAFF", senderName: staff.name, messageType, content }) }); await loadMessages(consultation.id); setNotice("Request sent to the verified doctor."); }

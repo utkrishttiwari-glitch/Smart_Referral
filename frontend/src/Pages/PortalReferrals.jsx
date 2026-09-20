@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import PortalNav from "../components/PortalNav";
 
-const API_BASE_URL = "http://localhost:5000";
+const API_BASE_URL = import.meta.env.VITE_API_URL + "";
 
 function PortalReferrals({ role }) {
   const [referrals, setReferrals] = useState([]);

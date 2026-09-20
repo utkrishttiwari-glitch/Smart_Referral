@@ -4,7 +4,7 @@ import { io } from "socket.io-client";
 import * as maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 
-const BACKEND_URL = "http://localhost:5000";
+const BACKEND_URL = import.meta.env.VITE_API_URL + "";
 
 const OSRM_URL =
   "https://router.project-osrm.org/route/v1/driving";
