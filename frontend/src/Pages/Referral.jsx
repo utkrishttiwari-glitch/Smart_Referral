@@ -1,7 +1,7 @@
 ﻿import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL + "";
+const API_BASE_URL = "https://smart-referral-backend.onrender.com";
 
 function Referral() {
   const navigate = useNavigate();

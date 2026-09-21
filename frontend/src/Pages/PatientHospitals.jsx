@@ -3,7 +3,7 @@ import PortalNav from "../components/PortalNav";
 import DataConfidenceBadge from "../components/DataConfidenceBadge";
 import { useSearchParams } from "react-router-dom";
 
-const API_BASE_URL = import.meta.env.VITE_API_URL + "";
+const API_BASE_URL = "https://smart-referral-backend.onrender.com";
 
 function PatientHospitals() {
   const [services, setServices] = useState([]);
