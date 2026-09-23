@@ -4,22 +4,22 @@ import { calculateFreshness } from "../services/freshnessService.js";
 
 export async function getHospitals(req, res) {
   try {
-   const hospitals = await db.orm.public.Hospital
-  .where({
-    isActive: true,
-  })
-  .select(
-    "id",
-    "name",
-    "address",
-    "city",
-    "state",
-    "latitude",
-    "longitude",
-    "phone",
-    "isActive"
-  )
-  .all();
+    const hospitals = await db.orm.public.Hospital
+      .where({
+        isActive: true,
+      })
+      .select(
+        "id",
+        "name",
+        "address",
+        "city",
+        "state",
+        "latitude",
+        "longitude",
+        "phone",
+        "isActive"
+      )
+      .all();
 
     res.json({
       success: true,
@@ -95,17 +95,34 @@ export async function getHospitalServices(req, res) {
 
     const serviceResult = await pool.query(
       `
-      SELECT s."id" AS "serviceId", s."name" AS "serviceName", s."description",
-        hs."id", hs."hospitalId", COALESCE(hs."isAvailable", false) AS "isAvailable",
-        hs."capacity", hs."notes", hs."updatedAt",
-        latest_update."source", latest_update."isVerified", latest_update."updatedAt" AS "dataUpdatedAt"
+      SELECT
+        s."id" AS "serviceId",
+        s."name" AS "serviceName",
+        s."description",
+        hs."id",
+        hs."hospitalId",
+        COALESCE(hs."isAvailable", false) AS "isAvailable",
+        hs."capacity",
+        hs."notes",
+        hs."updatedAt",
+        latest_update."source",
+        latest_update."isVerified",
+        latest_update."updatedAt" AS "dataUpdatedAt"
       FROM "service" s
-      LEFT JOIN "hospitalService" hs ON hs."serviceId" = s."id" AND hs."hospitalId" = $1
+      LEFT JOIN "hospitalService" hs
+        ON hs."serviceId" = s."id"
+        AND hs."hospitalId" = $1
       LEFT JOIN LATERAL (
-        SELECT "source", "isVerified", "updatedAt"
+        SELECT
+          "source",
+          "isVerified",
+          "updatedAt"
         FROM "hospitalDataUpdate"
-        WHERE "hospitalId" = $1 AND "dataType" = 'SERVICE_AVAILABILITY'
-        ORDER BY "updatedAt" DESC LIMIT 1
+        WHERE
+          "hospitalId" = $1
+          AND "dataType" = 'SERVICE_AVAILABILITY'
+        ORDER BY "updatedAt" DESC
+        LIMIT 1
       ) AS latest_update ON true
       WHERE s."isActive" = true
       ORDER BY s."name" ASC
@@ -114,14 +131,18 @@ export async function getHospitalServices(req, res) {
     );
 
     const services = serviceResult.rows.map((service) => {
-      const freshness = calculateFreshness(service.dataUpdatedAt || service.updatedAt);
+      const freshness = calculateFreshness(
+        service.dataUpdatedAt || service.updatedAt
+      );
+
       return {
         ...service,
-        confidence: service.isVerified && freshness.confidence === "HIGH"
-          ? "VERY_HIGH"
-          : service.isVerified && freshness.confidence === "MEDIUM"
-            ? "MEDIUM"
-            : freshness.confidence,
+        confidence:
+          service.isVerified && freshness.confidence === "HIGH"
+            ? "VERY_HIGH"
+            : service.isVerified && freshness.confidence === "MEDIUM"
+              ? "MEDIUM"
+              : freshness.confidence,
         isUpdatedToday: freshness.isUpdatedToday,
         ageMinutes: freshness.ageMinutes,
       };
@@ -140,7 +161,6 @@ export async function getHospitalServices(req, res) {
     });
   }
 }
-
 
 export async function getHospitalBeds(req, res) {
   try {
@@ -230,11 +250,14 @@ export async function getHospitalDataStatus(req, res) {
 
     const enrichedStatus = dataStatus.map((item) => {
       const freshness = calculateFreshness(item.updatedAt);
-      const confidence = item.isVerified && freshness.confidence === "HIGH"
-        ? "VERY_HIGH"
-        : item.isVerified && freshness.confidence === "MEDIUM"
-          ? "MEDIUM"
-          : freshness.confidence;
+
+      const confidence =
+        item.isVerified && freshness.confidence === "HIGH"
+          ? "VERY_HIGH"
+          : item.isVerified && freshness.confidence === "MEDIUM"
+            ? "MEDIUM"
+            : freshness.confidence;
+
       return {
         ...item,
         confidence,
@@ -256,7 +279,6 @@ export async function getHospitalDataStatus(req, res) {
     });
   }
 }
-
 
 export function updateHospitalService(io) {
   return async function (req, res) {
@@ -299,11 +321,9 @@ export function updateHospitalService(io) {
         });
       }
 
-      // Check hospital
-      const hospital =
-        await db.orm.public.Hospital.first({
-          id: hospitalId,
-        });
+      const hospital = await db.orm.public.Hospital.first({
+        id: hospitalId,
+      });
 
       if (!hospital) {
         return res.status(404).json({
@@ -312,11 +332,9 @@ export function updateHospitalService(io) {
         });
       }
 
-      // Check service
-      const service =
-        await db.orm.public.Service.first({
-          id: serviceId,
-        });
+      const service = await db.orm.public.Service.first({
+        id: serviceId,
+      });
 
       if (!service) {
         return res.status(404).json({
@@ -325,7 +343,6 @@ export function updateHospitalService(io) {
         });
       }
 
-      // Check hospital-service relationship
       const hospitalService =
         await db.orm.public.HospitalService.first({
           hospitalId,
@@ -342,16 +359,20 @@ export function updateHospitalService(io) {
           ? hospitalService?.notes ?? null
           : notes || null;
 
-      /*
-       * Prisma ORM update currently has a runtime issue
-       * in our Prisma 8 RC setup, so use pg for this update.
-       */
       const result = await pool.query(
         `
-       INSERT INTO "hospitalService"
-        ("hospitalId", "serviceId", "isAvailable", "capacity", "notes", "updatedAt")
+        INSERT INTO "hospitalService"
+          (
+            "hospitalId",
+            "serviceId",
+            "isAvailable",
+            "capacity",
+            "notes",
+            "updatedAt"
+          )
         VALUES ($4, $5, $1, $2, $3, NOW())
-        ON CONFLICT ("hospitalId", "serviceId") DO UPDATE SET
+        ON CONFLICT ("hospitalId", "serviceId")
+        DO UPDATE SET
           "isAvailable" = $1,
           "capacity" = $2,
           "notes" = $3,
@@ -379,28 +400,33 @@ export function updateHospitalService(io) {
       await pool.query(
         `
         INSERT INTO "hospitalDataUpdate"
-          ("hospitalId", "source", "dataType", "updatedAt", "isVerified")
-        VALUES ($1, 'MANUAL', 'SERVICE_AVAILABILITY', NOW(), false)
+          (
+            "hospitalId",
+            "source",
+            "dataType",
+            "updatedAt",
+            "isVerified"
+          )
+        VALUES (
+          $1,
+          'MANUAL',
+          'SERVICE_AVAILABILITY',
+          NOW(),
+          false
+        )
         `,
         [hospitalId]
       );
 
-      /*
-       * Broadcast to everyone listening to hospital updates.
-       */
-      io.emit(
-        "hospital-service-updated",
-        {
-          ...updatedService,
-          hospitalName: hospital.name,
-          serviceName: service.name,
-        }
-      );
+      io.emit("hospital-service-updated", {
+        ...updatedService,
+        hospitalName: hospital.name,
+        serviceName: service.name,
+      });
 
       return res.status(200).json({
         success: true,
-        message:
-          "Hospital service updated successfully",
+        message: "Hospital service updated successfully",
         data: {
           ...updatedService,
           hospitalName: hospital.name,
@@ -415,8 +441,7 @@ export function updateHospitalService(io) {
 
       return res.status(500).json({
         success: false,
-        message:
-          "Failed to update hospital service",
+        message: "Failed to update hospital service",
       });
     }
   };
@@ -453,8 +478,7 @@ export function updateHospitalBed(io) {
       ) {
         return res.status(400).json({
           success: false,
-          message:
-            "totalBeds must be a non-negative integer",
+          message: "totalBeds must be a non-negative integer",
         });
       }
 
@@ -477,10 +501,9 @@ export function updateHospitalBed(io) {
         });
       }
 
-      const hospital =
-        await db.orm.public.Hospital.first({
-          id: hospitalId,
-        });
+      const hospital = await db.orm.public.Hospital.first({
+        id: hospitalId,
+      });
 
       if (!hospital) {
         return res.status(404).json({
@@ -531,13 +554,10 @@ export function updateHospitalBed(io) {
 
       const updatedBed = result.rows[0];
 
-      io.emit(
-        "hospital-bed-updated",
-        {
-          ...updatedBed,
-          hospitalName: hospital.name,
-        }
-      );
+      io.emit("hospital-bed-updated", {
+        ...updatedBed,
+        hospitalName: hospital.name,
+      });
 
       return res.status(200).json({
         success: true,
@@ -548,9 +568,7 @@ export function updateHospitalBed(io) {
           hospitalName: hospital.name,
         },
       });
-
     } catch (error) {
-
       console.error(
         "Failed to update hospital bed availability:",
         error
@@ -564,8 +582,6 @@ export function updateHospitalBed(io) {
     }
   };
 }
-
-
 
 export async function confirmHospitalData(req, res) {
   try {
@@ -611,13 +627,60 @@ export async function confirmHospitalData(req, res) {
       });
     }
 
-    // Simulated hospital confirmation.
-    // We record this as a new audit event instead of
-    // overwriting the previous data-update record.
+    /*
+     * Hospital confirmation represents a fresh manual verification.
+     *
+     * For BED_AVAILABILITY we must update BOTH:
+     *
+     * 1. hospitalDataUpdate
+     * 2. every bedAvailability.updatedAt
+     *
+     * The recommendation engine checks the individual bed
+     * timestamps as well as the hospital data-update record.
+     */
+    if (dataType === "BED_AVAILABILITY") {
+      const bedUpdateResult = await pool.query(
+        `
+        UPDATE "bedAvailability"
+        SET "updatedAt" = NOW()
+        WHERE "hospitalId" = $1
+        RETURNING
+          "id",
+          "hospitalId",
+          "bedType",
+          "totalBeds",
+          "availableBeds",
+          "updatedAt"
+        `,
+        [hospitalId]
+      );
+
+      if (bedUpdateResult.rowCount === 0) {
+        return res.status(404).json({
+          success: false,
+          message:
+            "No bed availability records configured for this hospital",
+        });
+      }
+    }
+
+    /*
+     * SERVICE_AVAILABILITY already uses the HospitalService.updatedAt
+     * timestamp when service availability is changed.
+     *
+     * The confirmation itself creates a fresh verified
+     * HospitalDataUpdate audit record.
+     */
     const result = await pool.query(
       `
       INSERT INTO "hospitalDataUpdate"
-        ("hospitalId", "source", "dataType", "updatedAt", "isVerified")
+        (
+          "hospitalId",
+          "source",
+          "dataType",
+          "updatedAt",
+          "isVerified"
+        )
       VALUES
         ($1, $2, $3, NOW(), $4)
       RETURNING
@@ -649,22 +712,32 @@ export async function confirmHospitalData(req, res) {
       confirmationStatus: "CONFIRMED",
     };
 
-    // Send real-time confirmation to connected clients.
+    /*
+     * Send real-time confirmation to connected clients.
+     */
     if (req.io) {
-      req.io.emit("hospital-data-confirmed", responseData);
+      req.io.emit(
+        "hospital-data-confirmed",
+        responseData
+      );
     }
 
     return res.status(200).json({
       success: true,
-      message: "Hospital data confirmed successfully",
+      message:
+        "Hospital data confirmed successfully",
       data: responseData,
     });
   } catch (error) {
-    console.error("Hospital confirmation error:", error);
+    console.error(
+      "Hospital confirmation error:",
+      error
+    );
 
     return res.status(500).json({
       success: false,
-      message: "Failed to confirm hospital data",
+      message:
+        "Failed to confirm hospital data",
     });
   }
 }
