@@ -12,6 +12,7 @@ function MedicineProvider() {
   async function loadProviders() {
     try {
       const response = await fetch(`${API}/medicine-providers`);
+      
       const result = await response.json();
       if (!response.ok || !result.success) throw new Error(result.message || "Unable to load medicine providers.");
       setProviders(result.data || []);
