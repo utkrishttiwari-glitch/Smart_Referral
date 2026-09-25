@@ -6,7 +6,7 @@
 
         <div>
           <h3 className="text-lg font-bold">
-            MedRoute
+            Medi-Referral
           </h3>
 
           <p className="mt-1 text-sm text-blue-200">
@@ -14,8 +14,12 @@
           </p>
         </div>
 
-        <nav className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-blue-200"><a href="/#services" className="hover:text-white">Services</a><a href="/#how-it-works" className="hover:text-white">How It Works</a><a href="/login" className="hover:text-white">Login</a></nav>
-        <p className="text-sm text-blue-200">© 2026 MedRoute. Hackathon Prototype.</p>
+        <nav className="flex flex-wrap gap-x-5 gap-y-2 text-sm text-blue-200">
+          <a href="/" className="hover:text-white">Home</a>
+          <a href="/select-interface" className="hover:text-white">Start</a>
+          <a href="/login" className="hover:text-white">Login</a>
+        </nav>
+        <p className="text-sm text-blue-200">© 2026 Medi-Referral</p>
 
       </div>
 

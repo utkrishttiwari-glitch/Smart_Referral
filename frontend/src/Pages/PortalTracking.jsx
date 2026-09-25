@@ -1,5 +1,5 @@
 import PortalNav from "../components/PortalNav";
-import Tracking from "./Tracking";
+import Tracking from "./LiveTracking";
 
 function PortalTracking({ role }) {
   return (

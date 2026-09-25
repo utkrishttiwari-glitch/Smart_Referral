@@ -7,7 +7,7 @@ import {
 import Home from "./Pages/Home";
 import Referral from "./Pages/Referral";
 import Hospitals from "./Pages/Hospitals";
-import Tracking from "./Pages/Tracking";
+import LiveTracking from "./Pages/LiveTracking";
 import HospitalDashboard from "./Pages/HospitalDashboard";
 import Login from "./Pages/Login";
 import PatientDashboard from "./Pages/PatientDashboard";
@@ -51,9 +51,9 @@ function App() {
           element={<Hospitals />}
         />
 
-        <Route
-          path="/tracking"
-          element={<Tracking />}
+         <Route
+          path="/live-tracking/:referralId"
+          element={<LiveTracking />}
         />
 
         <Route

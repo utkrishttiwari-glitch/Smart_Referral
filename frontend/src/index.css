@@ -17,8 +17,9 @@
 }
 
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
-body { margin: 0; min-width: 320px; background: #f4f8fc; color: var(--sr-ink); }
+html { scroll-behavior: smooth; overflow-x: hidden; }
+body { margin: 0; min-width: 320px; overflow-x: hidden; background: #f4f8fc; color: var(--sr-ink); }
+input, select, textarea { min-width: 0; max-width: 100%; }
 button, input, select, textarea { font: inherit; }
 a { text-decoration: none; }
 :focus-visible { outline: 3px solid rgba(23, 105, 224, .32); outline-offset: 3px; }
@@ -203,4 +204,53 @@ a { text-decoration: none; }
 	.sr-search-form { grid-template-columns: 1fr; }
 	.sr-search-form button { width: 100%; }
 	.sr-service-choice { min-height: 125px; }
+}
+
+/* Shared layout guardrails for the public and portal shells. */
+.sr-public-main { min-width: 0; }
+.sr-portal-top, .sr-portal-nav { width: min(100%, 1440px); }
+.sr-portal-header { min-width: 0; }
+.sr-portal-actions { min-width: 0; flex-wrap: wrap; justify-content: flex-end; }
+.sr-portal-actions .sr-btn-primary { min-height: 40px; padding: 10px 14px; }
+.sr-portal-nav { overscroll-behavior-inline: contain; }
+.sr-portal-link { flex: 0 0 auto; }
+.sr-btn-primary, .sr-btn-secondary { min-height: 44px; max-width: 100%; text-align: center; line-height: 1.25; }
+button { max-width: 100%; }
+button, a { overflow-wrap: anywhere; }
+
+@media (max-width: 640px) {
+  .sr-public-header { padding-inline: 10px; }
+  .sr-public-header > div { padding-inline: 12px; }
+  .sr-public-header .sr-nav-cta { padding-inline: 12px; }
+  .sr-public-header .sr-nav-cta { font-size: .75rem; }
+  .sr-portal-top { align-items: flex-start; }
+  .sr-portal-top > a { flex: 1 1 180px; }
+  .sr-portal-actions { flex: 1 1 100%; justify-content: space-between; }
+  .sr-portal-actions .sr-btn-primary { flex: 1 1 auto; }
+}
+
+/* Shared layout guardrails for the public and portal shells. */
+.sr-public-main { min-width: 0; }
+.sr-portal-top, .sr-portal-nav { width: min(100%, 1440px); }
+.sr-portal-header { min-width: 0; }
+.sr-portal-top { flex-wrap: wrap; }
+.sr-portal-actions { min-width: 0; flex-wrap: wrap; justify-content: flex-end; }
+.sr-portal-actions .sr-btn-primary { min-height: 40px; padding: 10px 14px; }
+.sr-portal-nav { overscroll-behavior-inline: contain; }
+.sr-portal-link { flex: 0 0 auto; }
+.sr-btn-primary, .sr-btn-secondary { min-height: 44px; max-width: 100%; text-align: center; line-height: 1.25; }
+button { max-width: 100%; }
+button, a { overflow-wrap: anywhere; }
+table { border-collapse: collapse; }
+
+@media (max-width: 640px) {
+  .sr-public-main { min-width: 0; }
+  .sr-public-header { padding-inline: 10px; }
+  .sr-public-header > div { padding-inline: 12px; }
+  .sr-public-header .sr-nav-cta { padding-inline: 12px; }
+  .sr-public-header .sr-nav-cta { font-size: .75rem; }
+  .sr-portal-top { align-items: flex-start; }
+  .sr-portal-top > a { flex: 1 1 180px; }
+  .sr-portal-actions { flex: 1 1 100%; justify-content: space-between; }
+  .sr-portal-actions .sr-btn-primary { flex: 1 1 auto; }
 }
